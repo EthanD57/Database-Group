@@ -103,13 +103,13 @@ CREATE TABLE LISTENERS (
 
 --Added Constraints
 --startTime can not be NULL
---endTime can not be NULL
+--endTime can be NULL
 --listener can not be NULL
 --endTime must be greater than startTime
 CREATE TABLE SESSIONS (
     sessionID SERIAL,
     startTime TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    endTime TIMESTAMP NOT NULL,
+    endTime TIMESTAMP DEFAULT NULL,
     listener INTEGER NOT NULL,
     PRIMARY KEY (sessionID),
     FOREIGN KEY (listener) REFERENCES LISTENERS(listenerID) ON UPDATE CASCADE ON DELETE CASCADE,
@@ -159,7 +159,3 @@ CREATE TABLE CONTAINS (
     FOREIGN KEY (playlistTitle, playlistCreator) REFERENCES PLAYLISTS(title, listener) ON UPDATE CASCADE ON DELETE CASCADE,
     FOREIGN KEY (song) REFERENCES SONGS(songID) ON UPDATE CASCADE ON DELETE CASCADE
 );
-
-
-
-
