@@ -95,7 +95,7 @@ CREATE TABLE LISTENERS (
     PRIMARY KEY (listenerID),
     UNIQUE (email),
     CHECK (email LIKE '%@%.%'),
-    CHECK (billingZipcode LIKE '^\d{5}$'),
+    CHECK (billingZipcode ~ '^\d{5}$'),
     CHECK (LENGTH(profileName) >= 1),
     CHECK (LENGTH(billingStreet) >= 1),
     CHECK (LENGTH(billingCity) >= 1)
