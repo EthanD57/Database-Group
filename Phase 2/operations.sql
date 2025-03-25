@@ -119,7 +119,21 @@ $$ LANGUAGE plpgsql;
 
 --listenToPlaylist Function
 --Parameters: playlistTitle:VARCHAR(30), listener:INTEGER
-
+CREATE OR REPLACE FUNCTION listenToPlaylist(playlistTitle VARCHAR(30), listener INTEGER)
+    RETURNS VOID AS
+$$
+DECLARE
+    playlist_song RECORD;
+BEGIN
+    FOR playlist_song IN
+        SELECT song
+        FROM CONTAINS
+        WHERE CONTAINS.playlistTitle = $1 AND playlistCreator = $2
+    LOOP
+        PERFORM listenToSong(playlist_song.song, listener);
+    END LOOP;
+END;
+$$ LANGUAGE plpgsql;
 
 --endSession Function
 --End the listener's active session by updating endTime to the current timestamp
@@ -210,12 +224,80 @@ $$ LANGUAGE plpgsql;
 
 --listPlaylistsWithGenre Function
 --Parameters: listenerID:INTEGER, genre: "genre"
+CREATE OR REPLACE FUNCTION listPlaylistsWithGenre(listenerID INTEGER, genre "genre")
+    RETURNS TABLE (
+        playlistTitle VARCHAR(30),
+        playlistListener INTEGER,
+        dateOfCreation DATE
+    ) AS
+$$
+BEGIN
+    RETURN QUERY
+    SELECT DISTINCT p.title, p.listener, p.dateOfCreation
+    FROM PLAYLISTS p
+    JOIN CONTAINS c ON p.title = c.playlistTitle AND p.listener = c.playlistCreator
+    JOIN GENRES g ON c.song = g.song
+    WHERE p.listener = $1 AND g.genre = $2;
+END;
+$$ LANGUAGE plpgsql;
 
 --searchSongs Function
 --Parameters: pattern:VARCHAR(32)
+CREATE OR REPLACE FUNCTION searchSongs(pattern VARCHAR(32))
+    RETURNS TABLE (
+        songID INTEGER,
+        title VARCHAR(30),
+        subtitle VARCHAR(50),
+        duration INTERVAL
+    ) AS
+$$
+BEGIN
+    RETURN QUERY
+    SELECT s.songID, s.title, s.subtitle, s.duration
+    FROM SONGS s
+    WHERE s.title ILIKE '%' || $1 || '%'
+       OR s.subtitle ILIKE '%' || $1 || '%';
+END;
+$$ LANGUAGE plpgsql;
 
 --lookupArtist Function
 --Parameters: artist:VARCHAR(30)
+CREATE OR REPLACE FUNCTION lookupArtist(artist VARCHAR(30))
+    RETURNS TABLE (
+        songID INTEGER,
+        title VARCHAR(30),
+        subtitle VARCHAR(50),
+        duration INTERVAL
+    ) AS
+$$
+BEGIN
+    RETURN QUERY
+    SELECT s.songID, s.title, s.subtitle, s.duration
+    FROM SONGS s
+    JOIN INCLUDES i ON s.songID = i.song
+    JOIN WRITES w ON i.release = w.release
+    WHERE w.artist = $1;
+END;
+$$ LANGUAGE plpgsql;
 
 --displayListeningHistory Function
 --Parameters: x:DATE, y:DATE, listenerID:INTEGER
+CREATE OR REPLACE FUNCTION displayListeningHistory(x DATE, y DATE, listenerID INTEGER)
+    RETURNS TABLE (
+        songID INTEGER,
+        title VARCHAR(30),
+        subtitle VARCHAR(50),
+        duration INTERVAL
+    ) AS
+$$
+BEGIN
+    RETURN QUERY
+    SELECT DISTINCT s.songID, s.title, s.subtitle, s.duration
+    FROM SONGS s
+    JOIN LISTENS_TO lt ON s.songID = lt.song
+    JOIN SESSIONS sess ON lt.session = sess.sessionID
+    WHERE sess.listener = $3
+      AND sess.startTime::DATE BETWEEN $1 AND $2
+      AND sess.endTime::DATE BETWEEN $1 AND $2;
+END;
+$$ LANGUAGE plpgsql;
