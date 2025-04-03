@@ -1,8 +1,28 @@
+SET SCHEMA 'dbotify';
+
 --rankArtists Function
 --Rank artists based on number of sessions that listened to a song by the artist
 --Handle ties by number of minutes listened
 --Parameters: None
 --Output: (name of the artist, total times listened to, rank of the artist)
+CREATE OR REPLACE FUNCTION rankArtists()
+    RETURNS TABLE (
+        artistName VARCHAR(30),
+        timesListened BIGINT,
+        rank BIGINT
+    ) AS
+$$
+BEGIN
+    RETURN QUERY
+    SELECT w.artist AS artistName, COUNT(w.artist) AS timesListened,
+    RANK() OVER (ORDER BY COUNT(w.artist) DESC, SUM(s.duration) DESC) AS rank
+    FROM LISTENS_TO AS l
+    JOIN INCLUDES AS i ON l.song = i.song
+    JOIN WRITES AS w ON i.release = w.release
+    JOIN SONGS AS s ON s.songid = l.song
+    GROUP BY w.artist;
+END;
+$$ language plpgsql;
 
 --displayGenreHistory Function
 --Finds all songs within a genre that was listened to in the past k months
