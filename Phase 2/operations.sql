@@ -53,7 +53,7 @@ $$ LANGUAGE plpgsql;
 --addSongToRelease Function
 --Add a song to a release
 --Parameters: song:INTEGER, release:INTEGER
-CREATE OR REPLACE FUNCTION addArtistToRelease(song INTEGER, release INTEGER)
+CREATE OR REPLACE FUNCTION addSongToRelease(song INTEGER, release INTEGER)
     RETURNS VOID AS
 $$
 BEGIN
