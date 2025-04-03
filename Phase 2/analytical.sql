@@ -29,6 +29,29 @@ $$ language plpgsql;
 --Note: 1 month is defined as 30 days counting back starting from the current date
 --Parameters: genre:"genre", k:INTEGER
 --Output: (songID, title, subtitle)
+CREATE OR REPLACE FUNCTION displayGenreHistory(genre "genre", k INTEGER)
+    RETURNS TABLE (
+        songID INTEGER,
+        title VARCHAR(30),
+        subtitle VARCHAR(50)
+    ) AS
+$$
+DECLARE
+    time_interval INTERVAL;
+BEGIN
+    time_interval := make_interval(0, 0, 0, 30, 0, 0, 0.0) * $2;
+    RETURN QUERY
+    SELECT DISTINCT song.songID AS songID, song.title AS title, song.subtitle AS subtitle
+    FROM LISTENS_TO AS l
+    JOIN SONGS AS song ON l.song = song.songid
+    JOIN GENRES AS g ON g.song = song.songID
+    JOIN SESSIONS AS session ON session.sessionID = l.session
+    WHERE g.genre = $1 AND
+    (session.starttime::DATE <= current_date::DATE AND session.starttime::DATE >= current_date::DATE - time_interval)
+    AND (session.endtime IS NULL OR
+        session.endtime::DATE <= current_date::DATE AND session.endtime::DATE >= current_date::DATE - time_interval);
+END;
+$$ language plpgsql;
 
 --dbotifyWrapped Function
 --Displays the top k songs with respect to the number of sessions that listened to the song in the past x months
