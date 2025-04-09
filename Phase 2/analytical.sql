@@ -58,12 +58,56 @@ $$ language plpgsql;
 --Note: 1 month is defined as 30 days counting back starting from the current date
 --Parameters: k:INTEGER, x:INTEGER
 --Output: (songID, number of sessions that listened to the song)
-
+CREATE OR REPLACE FUNCTION dbotifyWrapped(x INTEGER, k INTEGER)
+    RETURNS TABLE (
+        songID INTEGER,
+        sessionCount BIGINT
+    ) AS
+$$
+BEGIN
+    RETURN QUERY
+    SELECT s.songID, COUNT(DISTINCT lt.session) AS sessionCount
+    FROM SONGS s
+    JOIN LISTENS_TO lt ON s.songID = lt.song
+    JOIN SESSIONS sess ON lt.session = sess.sessionID
+    WHERE sess.startTime >= CURRENT_DATE - (x * INTERVAL '30 days')
+    GROUP BY s.songID
+    ORDER BY sessionCount DESC, s.songID
+    LIMIT k;
+END;
+$$ LANGUAGE plpgsql;
 --priceIncrease Function
 --Finds the most populated zipcode for each state
 --Parameters: None
 --Output: (billing state, billing zipcode, number of impacted listeners)
-
+CREATE OR REPLACE FUNCTION priceIncrease()
+RETURNS TABLE (
+    billingState "state",
+    billingZipcode CHAR(5),
+    impactedListeners BIGINT
+) AS
+$$
+BEGIN
+    RETURN QUERY
+    WITH zipcode_counts AS (
+        SELECT l.billingState, l.billingZipcode, COUNT(*) AS listenerCount
+        FROM LISTENERS l
+        GROUP BY l.billingState, l.billingZipcode
+    ),
+    ranked_zipcodes AS (
+        SELECT z.billingState, z.billingZipcode, z.listenerCount,
+               ROW_NUMBER() OVER (
+                   PARTITION BY z.billingState
+                   ORDER BY z.listenerCount DESC, z.billingZipcode
+               ) AS rnk
+        FROM zipcode_counts z
+    )
+    SELECT r.billingState, r.billingZipcode, r.listenerCount AS impactedListeners
+    FROM ranked_zipcodes r
+    WHERE r.rnk = 1
+    ORDER BY r.billingState;
+END;
+$$ LANGUAGE plpgsql;
 --connectedArtists Function
 --Finds a path, if one exists, between artists a1 and a2 with at most 3 hops between them
 --Note: A hop is defined as two artists writing the same release together
