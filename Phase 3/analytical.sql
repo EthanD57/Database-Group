@@ -2,7 +2,7 @@ SET SCHEMA 'dbotify';
 
 --rankArtists Function
 --Rank artists based on number of sessions that listened to a song by the artist
---Handle ties by number of minutes listened
+--Handle ties by number of minutes listened and then by alphabetical order of the artist name
 --Parameters: None
 --Output: (name of the artist, total times listened to, rank of the artist)
 CREATE OR REPLACE FUNCTION rankArtists()
