@@ -76,16 +76,17 @@ BEGIN
     LIMIT k;
 END;
 $$ LANGUAGE plpgsql;
+
 --priceIncrease Function
 --Finds the most populated zipcode for each state
 --Parameters: None
 --Output: (billing state, billing zipcode, number of impacted listeners)
 CREATE OR REPLACE FUNCTION priceIncrease()
-RETURNS TABLE (
+    RETURNS TABLE (
     billingState "state",
     billingZipcode CHAR(5),
     impactedListeners BIGINT
-) AS
+    ) AS
 $$
 BEGIN
     RETURN QUERY
@@ -108,6 +109,7 @@ BEGIN
     ORDER BY r.billingState;
 END;
 $$ LANGUAGE plpgsql;
+
 --connectedArtists Function
 --Finds a path, if one exists, between artists a1 and a2 with at most 3 hops between them
 --Note: A hop is defined as two artists writing the same release together
@@ -116,3 +118,41 @@ $$ LANGUAGE plpgsql;
 --Parameters: a1:VARCHAR(30), a2:VARCHAR(30)
 --Output: A string representing the path that connects a1 to a2 with all intermediate hops
 --Example Output: ‘Brian’ −−−→ ‘Maanya’ −−−→ ‘Vasilis’ −−−→ ‘Pat’
+CREATE OR REPLACE FUNCTION connectedArtists(a1 VARCHAR(30), a2 VARCHAR(30))
+    RETURNS TEXT
+    AS
+$$
+DECLARE
+    path TEXT;
+    current_artist VARCHAR(30);
+    hop_counter INTEGER;
+    max_hops INTEGER := 3;
+    visited_artists TEXT[] := ARRAY[a1];
+BEGIN
+    path := a1;
+    current_artist := a1;
+    hop_counter := 0;
+
+    WHILE hop_counter < max_hops LOOP
+        SELECT w2.artist
+        INTO current_artist
+        FROM WRITES w
+        JOIN WRITES w2 ON w.release = w2.release AND w.artist != w2.artist
+        WHERE w.artist = current_artist AND NOT (w2.artist = ANY(visited_artists))
+        LIMIT 1;
+
+        IF hop_counter = max_hops THEN
+            EXIT;
+        END IF;
+
+        path := path || ' → ' || current_artist;
+        visited_artists := array_append(visited_artists, current_artist);
+        hop_counter := hop_counter + 1;
+
+        IF current_artist = a2 THEN
+            RETURN path;
+        END IF;
+    END LOOP;
+    RETURN 'No Path was found between ' || a1 || ' and ' || a2 || ' within 3 hops';
+END;
+$$ LANGUAGE plpgsql;
