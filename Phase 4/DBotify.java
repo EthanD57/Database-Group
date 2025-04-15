@@ -3,6 +3,8 @@ import java.util.Properties;
 import java.util.Scanner;
 
 public class DBotify {
+    private static int QUERY_TIMEOUT = 30;
+
     private static Connection connect(String username, String password) {
         Properties props = new Properties();
         props.setProperty("user", username);
@@ -14,27 +16,59 @@ public class DBotify {
 
             return conn;
         } catch(SQLException e) {
-            System.err.println("Message = " + e.getMessage());
-            System.err.println("SQLState = " + e.getSQLState());
-            System.err.println("SQL Code = " + e.getErrorCode());
+            handleError(e);
             return null;
         }
     }
 
-    private static void addRelease() {
-        // TODO: write function and modify inputs/outputs
+    private static void addRelease(Connection conn, String title, Date releaseDate, String label) {
+        try (CallableStatement st = conn.prepareCall("{ CALL addRelease(?, ?, ?) }")){
+            st.setQueryTimeout(QUERY_TIMEOUT);
+            st.setString(1, title);
+            st.setDate(2, releaseDate);
+            st.setString(3, label);
+            st.execute();
+        } catch(SQLException e) {
+            handleError(e);
+        }
     }
 
-    private static void newListener() {
-        // TODO: write function and modify inputs/outputs
+    private static void newListener(Connection conn, String profileName, String billingStreet, String billingCity,
+    String billingState, String billingZipcode, String email) {
+        try (CallableStatement st = conn.prepareCall("{ CALL newListener(?, ?, ?, ?, ?, ?) }")){
+            st.setQueryTimeout(QUERY_TIMEOUT);
+            st.setString(1, profileName);
+            st.setString(2, billingStreet);
+            st.setString(3, billingCity);
+            st.setString(4, billingState);
+            st.setString(5, billingZipcode);
+            st.setString(6, email);
+            st.execute();
+        } catch(SQLException e) {
+            handleError(e);
+        }
     }
 
-    private static void createPlaylist() {
-        // TODO: write function and modify inputs/outputs
+    private static void createPlaylist(Connection conn, String title, int listener) {
+        try (CallableStatement st = conn.prepareCall("{ CALL createPlaylist(?, ?) }")){
+            st.setQueryTimeout(QUERY_TIMEOUT);
+            st.setString(1, title);
+            st.setInt(2, listener);
+            st.execute();
+        } catch(SQLException e) {
+            handleError(e);
+        }
     }
 
-    private static void addArtistToRelease() {
-        // TODO: write function and modify inputs/outputs
+    private static void addArtistToRelease(Connection conn, String artistName, int release) {
+        try (CallableStatement st = conn.prepareCall("{ CALL addArtistToRelease(?, ?) }")){
+            st.setQueryTimeout(QUERY_TIMEOUT);
+            st.setString(1, artistName);
+            st.setInt(2, release);
+            st.execute();
+        } catch(SQLException e) {
+            handleError(e);
+        }
     }
 
     private static void addSongToRelease() {
@@ -116,6 +150,13 @@ public class DBotify {
     private static void exit() {
         // TODO: write function and modify inputs/outputs
     }
+
+    private static void handleError(SQLException err) {
+        System.err.println("The following error occurred:");
+        System.err.println("Message = " + err.getMessage());
+        System.err.println("SQLState = " + err.getSQLState());
+        System.err.println("SQL Code = " + err.getErrorCode());
+    }
     
     public static void main(String[] args) {
         int menu = -1;
@@ -124,12 +165,15 @@ public class DBotify {
 
         while(menu != 25) {
             menu = sc.nextInt();
+            sc.nextLine();
 
             switch(menu) {
                 case 1:
-                    System.out.println("Enter your username: ");
+                    System.out.println("Establishing a connection to a DB...\n");
+
+                    System.out.println("Enter your username for the DB: ");
                     String username = sc.nextLine();
-                    System.out.println("Enter your password: ");
+                    System.out.println("Enter your password for the DB: ");
                     String password = sc.nextLine();
 
                     conn = connect(username, password);
@@ -142,20 +186,56 @@ public class DBotify {
                     }
                     break;
                 case 2:
-                    // TODO: modify for function
-                    addRelease();
+                    System.out.println("Adding a release...\n");
+
+                    System.out.println("Enter the title of the release: ");
+                    String releaseTitle = sc.nextLine();
+                    System.out.println("Enter the date of the release in the format YYYY-MM-DD: ");
+                    Date releaseDate = Date.valueOf(sc.nextLine());
+                    System.out.println("Enter the label name of the release: ");
+                    String label = sc.nextLine();
+
+                    addRelease(conn, releaseTitle, releaseDate, label);
                     break;
                 case 3:
-                    // TODO: modify for function
-                    newListener();
+                    System.out.println("Creating a new listener...\n");
+
+                    System.out.println("Enter the name of the profile: ");
+                    String profileName = sc.nextLine();
+                    System.out.println("Enter the billing street address: ");
+                    String billingStreet = sc.nextLine();
+                    System.out.println("Enter the billing city: ");
+                    String billingCity = sc.nextLine();
+                    System.out.println("Enter the billing state abbreviation (i.e. Pennsylvania = PA): ");
+                    String billingState = sc.nextLine();
+                    System.out.println("Enter the billing zipcode: ");
+                    String billingZipcode = sc.nextLine();
+                    System.out.println("Enter the email associated with the profile: ");
+                    String profileEmail = sc.nextLine();
+
+                    newListener(conn, profileName, billingStreet, billingCity, billingState, billingZipcode, profileEmail);
                     break;
                 case 4:
-                    // TODO: modify for function
-                    createPlaylist();
+                    System.out.println("Creating playlist...\n");
+
+                    System.out.println("Enter the title of the playlist: ");
+                    String playlistTitle = sc.nextLine();
+                    System.out.println("Enter the listenerID of the listener: ");
+                    int listenerID = sc.nextInt();
+                    sc.nextLine();
+
+                    createPlaylist(conn, playlistTitle, listenerID);
                     break;
                 case 5:
-                    // TODO: modify for function
-                    addArtistToRelease();
+                    System.out.println("Adding artist to release...\n");
+
+                    System.out.println("Enter the name of the artist: ");
+                    String artistName = sc.nextLine();
+                    System.out.println("Enter the releaseID of the release: ");
+                    int releaseID = sc.nextInt();
+                    sc.nextLine();
+                    
+                    addArtistToRelease(conn, artistName, releaseID);
                     break;
                 case 6:
                     // TODO: modify for function
