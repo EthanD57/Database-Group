@@ -1,4 +1,7 @@
+package src.main.java.org.example;
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 import java.util.Scanner;
 
@@ -71,16 +74,86 @@ public class DBotify {
         }
     }
 
-    private static void addSongToRelease() {
-        // TODO: write function and modify inputs/outputs
+    private static void addSongToRelease(Connection conn) {
+        Scanner sc = new Scanner(System.in);
+
+        try (PreparedStatement st = conn.prepareStatement("SELECT * FROM RELEASES;")){
+            List<Integer> releases = new ArrayList<Integer>();
+            st.setQueryTimeout(QUERY_TIMEOUT);
+            ResultSet rs = st.executeQuery();
+            while(rs.next()) {
+                System.out.println("ReleaseID: " + rs.getInt("releaseID") + " | title: " + rs.getString("title")
+                + " | releaseDate: " + rs.getDate("releaseDATE") + " | label: " + rs.getString("label"));
+                releases.add(rs.getInt("releaseID"));
+            }
+
+            if(releases.isEmpty()) {
+                System.out.println("\nNo Releases have been written");
+                sc.close();
+                return;
+            }
+
+            System.out.println("\nEnter the releaseID you want to add a song to or type -1 to go to the menu: ");
+            int releaseID = sc.nextInt();
+            sc.nextLine();
+
+            if(releaseID == -1) {
+                System.out.println("Returning to menu...");
+                sc.close();
+                return;
+            }
+            else if(!releases.contains(releaseID)) {
+                System.out.println("Invalid releaseID, returning to menu...");
+                sc.close();
+                return;
+            }
+            else {
+                int songID = 0;
+                while(true) {
+                    System.out.println("\nEnter a songID to add to the release or type -1 to go to the menu: ");
+                    sc.nextInt();
+                    sc.nextLine();
+
+                    if(songID == -1) {
+                        System.out.println("Returning to menu...");
+                        sc.close();
+                        return;
+                    }
+
+                    System.out.println("Adding song to release...");
+                    CallableStatement cs = conn.prepareCall("{ CALL addSongToRelease(?, ?) }");
+                    cs.setQueryTimeout(QUERY_TIMEOUT);
+                    cs.setInt(1, releaseID);
+                    cs.setInt(2, songID);
+                }
+            }
+        } catch(SQLException e) {
+            sc.close();
+            handleError(e);
+        }
     }
 
-    private static void addSongToPlaylist() {
-        // TODO: write function and modify inputs/outputs
+    private static void addSongToPlaylist(Connection conn, String playlistTitle, int listener, int song) {
+        try (CallableStatement st = conn.prepareCall("{ CALL addSongToPlaylist(?, ?, ?) }")){
+            st.setQueryTimeout(QUERY_TIMEOUT);
+            st.setString(1, playlistTitle);
+            st.setInt(2, listener);
+            st.setInt(3, song);
+            st.execute();
+        } catch(SQLException e) {
+            handleError(e);
+        }
     }
 
-    private static void startSession() {
-        // TODO: write function and modify inputs/outputs
+    private static void startSession(Connection conn, int listenerID, Timestamp startTime) {
+        try (CallableStatement st = conn.prepareCall("{ CALL startSession(?, ?) }")){
+            st.setQueryTimeout(QUERY_TIMEOUT);
+            st.setInt(1, listenerID);
+            st.setTimestamp(2, startTime);
+            st.execute();
+        } catch(SQLException e) {
+            handleError(e);
+        }
     }
 
     private static void listenToSong() {
@@ -164,6 +237,32 @@ public class DBotify {
         Scanner sc = new Scanner(System.in);
 
         while(menu != 25) {
+            System.out.println("MENU OPTIONS");
+            System.out.println( "1: Connect to DB\n" +
+                                "2: Add a release\n" +
+                                "3: Create a new listener\n" +
+                                "4: Create a playlist\n" +
+                                "5: Add an artist to a release\n" +
+                                "6: Add song(s) to a release\n" +
+                                "7: Add a song to a playlist\n" +
+                                "8: Start a session\n" + 
+                                "9: Listen to a song or multiple songs\n" + 
+                                "10: Listen to a playlist\n" +
+                                "11: End a session\n" +
+                                "12: Delete a listener\n" +
+                                "13: Clear a listener's listening history\n" +
+                                "14: Remove a song\n" +
+                                "15: Delete a playlist or all playlists\n" + 
+                                "16: Find all of a listener's playlists that have a song with a specific genre\n" +
+                                "17: Search for songs with a title or subtitle that contain a pattern\n" +
+                                "18: Find all of an artist's songs that are part of a release\n" +
+                                "19: Display a listener's listening history between two dates\n" +
+                                "20: Rank of artists\n" +
+                                "21: Display songs with a genre that have been listened to in a specified number of months\n" +
+                                "22: DBotify Wrapped\n" +
+                                "23: Impact of price increases on most populous zipcode in each state\n" +
+                                "24: Finds a path between two artists that are at most 3 hops away\n" +
+                                "25: Exit\n");
             menu = sc.nextInt();
             sc.nextLine();
 
@@ -238,16 +337,32 @@ public class DBotify {
                     addArtistToRelease(conn, artistName, releaseID);
                     break;
                 case 6:
-                    // TODO: modify for function
-                    addSongToRelease();
+                    addSongToRelease(conn);
                     break;
                 case 7:
-                    // TODO: modify for function
-                    addSongToPlaylist();
+                    System.out.println("Adding song to playlist...\n");
+
+                    System.out.println("Enter the title of the playlist: ");
+                    String songPlaylistTitle = sc.nextLine();
+                    System.out.println("Enter the listenerID of the listener: ");
+                    int songListenerID = sc.nextInt();
+                    sc.nextLine();
+                    System.out.println("Enter the songID of the song: ");
+                    int songID = sc.nextInt();
+                    sc.nextLine();
+
+                    addSongToPlaylist(conn, songPlaylistTitle, songListenerID, songID);
                     break;
                 case 8:
-                    // TODO: modify for function
-                    startSession();
+                    System.out.println("Starting a new session...\n");
+
+                    System.out.println("Enter the listenerID of the listener: ");
+                    int startListenerID = sc.nextInt();
+                    sc.nextLine();
+                    System.out.println("Enter the starting timestamp of the session in the format YYYY-MM-DD HH24:MI:SS : ");
+                    Timestamp startTimestamp = Timestamp.valueOf(sc.nextLine());
+
+                    startSession(conn, startListenerID, startTimestamp);
                     break;
                 case 9:
                     // TODO: modify for function
