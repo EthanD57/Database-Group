@@ -244,133 +244,35 @@ public class DBotify {
 
     }
 
-    private static void endSession(Connection conn, int endID) { //11
-        Scanner sc = new Scanner(System.in);
-        String profile= "";
-        try(PreparedStatement checkSt = conn.prepareStatement("SELECT profileName FROM LISTENERS WHERE listenerID = ?")){
-            checkSt.setQueryTimeout(QUERY_TIMEOUT);
-            checkSt.setInt(1, endID);
-            ResultSet r_1 = checkSt.executeQuery();
-            if (!r_1.next()) {
-                System.out.println("Not a valid listener.");
-                sc.close();
-                return;
-            }
-            profile = r_1.getString("profileName");
-            CallableStatement st = conn.prepareCall("{ CALL endSession(?) }");
-            st.setQueryTimeout(QUERY_TIMEOUT);
-            st.setInt(1, endID);
-            st.execute();
-            System.out.println("Session ended successfully for " + profile + ".");
-        }catch(SQLException e){
-            if(e.getSQLState().equals("P0002")){
-                System.out.println("No active sessions for " + profile + ".");
-            }else{
-                sc.close();
-                handleError(e);
-            }
-        }
+    private static void endSession() { //11
+        // TODO: write function and modify inputs/outputs
     }
 
-    private static void deleteListener(Connection conn, int removeID) { //12
-        try (CallableStatement st = conn.prepareCall("{ CALL deleteListener(?) }")){
-            st.setQueryTimeout(QUERY_TIMEOUT);
-            st.setString(1, removeID);
-            st.execute();
-            System.out.println("Successfully removed listener.");
-        } catch(SQLException e) {
-            handleError(e);
-        }
+    private static void deleteListener() { //12
+        // TODO: write function and modify inputs/outputs
     }
 
-    private static void clearListeningHistory(Connection conn, int clearID) { //13
-        try (CallableStatement st = conn.prepareCall("{ CALL clearListeningHistory(?) }")){
-            st.setQueryTimeout(QUERY_TIMEOUT);
-            st.setString(1, clearID);
-            st.execute();
-            System.out.println("Successfully cleared history of listener.");
-        } catch(SQLException e) {
-            handleError(e);
-        }
+    private static void clearListeningHistory() { //13
+        // TODO: write function and modify inputs/outputs
     }
 
-    private static void removeSong(Connection conn, int removeSongID) { //14
-        try (CallableStatement st = conn.prepareCall("{ CALL removeSong(?) }")){
-            st.setQueryTimeout(QUERY_TIMEOUT);
-            st.setString(1, removeSongID);
-            st.execute();
-            System.out.println("Successfully removed song.");
-        } catch(SQLException e) {
-            handleError(e);
-        }
+    private static void removeSong() { //14
+        // TODO: write function and modify inputs/outputs
     }
 
-    private static void deletePlaylist(Connection conn, int deletePlaylistListenerID, boolean all) { //15
-        Scanner sc = new Scanner(System.in);
-        try (PreparedStatement st = conn.prepareStatement("SELECT title FROM PLAYLISTS WHERE listener = ?");){
-            st.setQueryTimeout(QUERY_TIMEOUT);
-            st.setString(1, deletePlaylistListenerID);
-            ResultSet r1 = st.executeQuery();
-            if (!r_1.next()) {
-                System.out.println("No playlists to remove");
-                sc.close();
-                return;
-            }
-            ResultSet r2 = st.executeQuery();
-            if(all){
-                while(r2.next()){
-                    CallableStatement allSt = conn.prepareCall("{ CALL deletePlaylist(?, ?) }");
-                    allSt.setQueryTimeout(QUERY_TIMEOUT);
-                    allSt.setString(1, r2.getString("title"));
-                    allSt.setInt(2, deletePlaylistListenerID);
-                    allSt.execute();
-                }
-                System.out.println("Successfully deleted all playlists.");
-            }
-            else{
-                System.out.println("Playlists:");
-                while (r2.next()) {
-                    System.out.println(r2.getString("title"));
-                }
-                System.out.println("Choose a playlist to delete:");
-                String deletePlaylistTitle = sc.nextLine();
-                sc.nextLine();
-                CallableStatement oneSt = conn.prepareCall("{ CALL deletePlaylist(?, ?) }");
-                oneSt.setQueryTimeout(QUERY_TIMEOUT);
-                oneSt.setString(1, deletePlaylistTitle);
-                oneSt.setInt(2, deletePlaylistListenerID);
-                oneSt.execute();
-                System.out.println("Successfully deleted one playlist.");
-            }
-        } catch(SQLException e) {
-            sc.close();
-            handleError(e);
-        }
+    private static void deletePlaylist() { //15
+        // TODO: write function and modify inputs/outputs
     }
 
-    private static void listPlaylistsWithGenre(Connection conn, int listenerID, String genre) { //16
-        try (CallableStatement st = conn.prepareCall("{ SELECT * FROM listPlaylistsWithGenre(?, ?) }")) {
-            st.setQueryTimeout(QUERY_TIMEOUT);
-            st.setInt(1, listenerID);
-            st.setString(2, genre);
-            ResultSet r = st.executeQuery();
-            System.out.println("Displaying playlists with " + genre +" genre");
-            int count = 1;
-            while(r.next()){
-                System.out.println(count + ":" + r.getString("playlistTitle") + ", " + r.getInt("playlistListener") + ", " + r.getDate("dateOfCreation"));
-                count++;
-            }
-        }catch(SQLException e) {
-            handleError(e);
-        }
+    private static void listPlaylistsWithGenre() { //16
+        // TODO: write function and modify inputs/outputs
     }
  //------------------------------------------------------------
-    private static void searchSongs(Connection conn) {
+    private static void searchSongs(Connection conn, Scanner input) {
         if (conn == null) {
             System.out.println("No database connection! \n");
             return;
         }
-        Scanner input = new Scanner(System.in);
         try {
             PreparedStatement checkSongs = conn.prepareStatement("SELECT * FROM SONGS");
             checkSongs.setQueryTimeout(QUERY_TIMEOUT);
@@ -379,14 +281,14 @@ public class DBotify {
                 System.out.println("No songs available to search");
                 return;
             }
+            checkSongs.close();
             do{
-                System.out.println("\nEnter a song title or subtitle (up to 30 characters) to search for or type -1 to go to the menu: ");
+                System.out.println("\nEnter a song title or subtitle (up to 30 characters) to search for, or type -1 to go to the menu: ");
                 System.out.println("For Search Help, type 'help'");
                 String searchTerm = input.nextLine();
 
                 if(searchTerm.equals("-1")) {
                     System.out.println("Returning to menu...");
-                    input.close();
                     return;
                 }
 
@@ -397,13 +299,17 @@ public class DBotify {
                     continue;
                 }
 
-                CallableStatement s = conn.prepareCall("{CALL searchSongs(?)}");
+                boolean found = false;
+                PreparedStatement s = conn.prepareStatement("SELECT * FROM searchSongs(?)");
                 s.setQueryTimeout(QUERY_TIMEOUT);
                 s.setString(1, searchTerm.substring(0, Math.min(30, searchTerm.length())));
-                s.execute();
+                boolean hasResults = s.execute();
+                if(!hasResults) {
+                    System.out.println("No results found.");
+                    continue;
+                }
                 //Print out results
                 ResultSet searchResults = s.getResultSet();
-                boolean found = false;
                 while(searchResults.next()){
                     System.out.println(
                             "SongID: " + searchResults.getInt("songID") +
@@ -411,46 +317,317 @@ public class DBotify {
                             " | Subtitle: " + searchResults.getString("subtitle") +
                             " | Duration: " + searchResults.getString("duration"));
                 }
-                if(!found) {
-                    System.out.println("No results found.");
+                s.close();
+            } while (true);
+        } catch(SQLException e){
+            handleError(e);
+        }
+    }
+
+    private static void lookupArtist(Connection conn, Scanner input) {
+        if (conn == null) {
+            System.out.println("No database connection! \n");
+            return;
+        }
+        try {
+            PreparedStatement checkSongs = conn.prepareStatement("SELECT * FROM ARTISTS");
+            checkSongs.setQueryTimeout(QUERY_TIMEOUT);
+            ResultSet r = checkSongs.executeQuery();
+            if(!r.next()){
+                System.out.println("No artists available to search");
+                return;
+            }
+            checkSongs.close();
+            do{
+                System.out.println("\nEnter a artist's name (up to 30 characters) to show all songs by them, or type -1 to go to the menu: ");
+                String searchTerm = input.nextLine();
+
+                if(searchTerm.equals("-1")) {
+                    System.out.println("Returning to menu...");
+                    return;
+                }
+
+                boolean found = false;
+                PreparedStatement s = conn.prepareStatement("SELECT * FROM lookupArtist(?)");
+                s.setQueryTimeout(QUERY_TIMEOUT);
+                s.setString(1, searchTerm.substring(0, Math.min(30, searchTerm.length())));
+                boolean hasResults = s.execute();
+                if(!hasResults) {
+                    System.out.printf("No results found for artist '%s'", searchTerm);
+                    continue;
+                }
+                //Print out results
+                ResultSet searchResults = s.getResultSet();
+                while(searchResults.next()){
+                    System.out.println(
+                            "SongID: " + searchResults.getInt("songID") +
+                                    " | Title: " + searchResults.getString("title") +
+                                    " | Subtitle: " + searchResults.getString("subtitle") +
+                                    " | Duration: " + searchResults.getString("duration"));
                 }
                 s.close();
             } while (true);
         } catch(SQLException e){
-            input.close();
             handleError(e);
         }
-        input.close();
-
     }
 
-    private static void lookupArtist() {
-        // TODO: write function and modify inputs/outputs
+    private static void displayListeningHistory(Connection conn, Scanner input) {
+        if (conn == null) {
+            System.out.println("No database connection! \n");
+            return;
+        }
+        try {
+            PreparedStatement checkSongs = conn.prepareStatement("SELECT * FROM SESSIONS");
+            checkSongs.setQueryTimeout(QUERY_TIMEOUT);
+            ResultSet r = checkSongs.executeQuery();
+            if(!r.next()){
+                System.out.println("No Listening History available to display");
+                return;
+            }
+            checkSongs.close();
+            do{
+                System.out.println("\nEnter a start date, end date, and listener ID to show listening history, or type -1 to go to the menu: ");
+                System.out.println("Format: YYYY-MM-DD YYYY-MM-DD <integer>");
+                String searchString = input.nextLine();
+
+                if(searchString.equals("-1")) {
+                    System.out.println("Returning to menu...");
+                    return;
+                }
+                String[] splitSearchString = searchString.split(" ");
+                boolean found = false;
+                PreparedStatement s = conn.prepareStatement("SELECT * FROM displayListeningHistory(?, ?, ?)");
+                s.setQueryTimeout(QUERY_TIMEOUT);
+                s.setDate(1, Date.valueOf(splitSearchString[0]));
+                s.setDate(2, Date.valueOf(splitSearchString[1]));
+                s.setInt(3, Integer.parseInt(splitSearchString[2]));
+                boolean hasResults = s.execute();
+                if(!hasResults) {
+                    System.out.println("No results found.");
+                    continue;
+                }
+                //Print out results
+                ResultSet searchResults = s.getResultSet();
+                while(searchResults.next()){
+                    System.out.println(
+                            "SongID: " + searchResults.getInt("songID") +
+                                    " | Title: " + searchResults.getString("title") +
+                                    " | Subtitle: " + searchResults.getString("subtitle") +
+                                    " | Duration: " + searchResults.getString("duration"));
+                }
+                s.close();
+            } while (true);
+        } catch(SQLException e){
+            handleError(e);
+        }
     }
 
-    private static void displayListeningHistory() {
-        // TODO: write function and modify inputs/outputs
+    private static void rankArtists(Connection conn, Scanner input) {
+        if (conn == null) {
+            System.out.println("No database connection! \n");
+            return;
+        }
+        try {
+            PreparedStatement checkSongs = conn.prepareStatement("SELECT * FROM ARTISTS");
+            checkSongs.setQueryTimeout(QUERY_TIMEOUT);
+            ResultSet r = checkSongs.executeQuery();
+            if(!r.next()){
+                System.out.println("No Artists to Rank");
+                return;
+            }
+            checkSongs.close();
+
+            PreparedStatement s = conn.prepareStatement("SELECT * FROM rankArtists()");
+            s.setQueryTimeout(QUERY_TIMEOUT);
+            s.execute();
+
+            //Print out results
+            ResultSet searchResults = s.getResultSet();
+            while(searchResults.next()){
+                System.out.println(
+                                "Artist Name: " + searchResults.getString("artistName") +
+                                " | Listens: " + searchResults.getInt("timesListened") +
+                                " | Rank: " + searchResults.getInt("rank"));
+            }
+            s.close();
+            System.out.println("Press enter to return to the menu...");
+            input.nextLine();
+        } catch(SQLException e){
+            handleError(e);
+        }
     }
 
-    private static void rankArtists() {
-        // TODO: write function and modify inputs/outputs
+    private static void displayGenreHistory(Connection conn, Scanner input) {
+        if (conn == null) {
+            System.out.println("No database connection! \n");
+            return;
+        }
+        try {
+            PreparedStatement checkSongs = conn.prepareStatement("SELECT * FROM SONGS");
+            checkSongs.setQueryTimeout(QUERY_TIMEOUT);
+            ResultSet r = checkSongs.executeQuery();
+            if(!r.next()){
+                System.out.println("No Songs Available to Display");
+                return;
+            }
+            checkSongs.close();
+            do{
+                System.out.println("\nEnter a Genre and Time (T) in Months to Search For All Songs of That Genre That Were Listened to In 'T' Months, or type -1 to go to the menu: ");
+                System.out.println("Genres: Pop, Country, Electronic, Hip Hop, Jazz, Punk, Rock, Heavy Metal, Soul");
+                String searchString = input.nextLine();
+
+                if(searchString.equals("-1")) {
+                    System.out.println("Returning to menu...");
+                    return;
+                }
+                String[] splitSearchString = searchString.split(" ");
+                boolean found = false;
+                PreparedStatement s = conn.prepareStatement("SELECT * FROM displayGenreHistory(?, ?)");
+                s.setQueryTimeout(QUERY_TIMEOUT);
+                s.setString(1, splitSearchString[0]);
+                s.setInt(2, Integer.parseInt(splitSearchString[1]));
+                boolean hasResults = s.execute();
+                if(!hasResults) {
+                    System.out.println("This genre was not listened to in the past " + splitSearchString[1] + " months." );
+                    continue;
+                }
+                //Print out results
+                ResultSet searchResults = s.getResultSet();
+                while(searchResults.next()){
+                    System.out.println(
+                                    "SongID: " + searchResults.getInt("songID") +
+                                    " | Title: " + searchResults.getString("title") +
+                                    " | Subtitle: " + searchResults.getString("subtitle"));
+                }
+                s.close();
+            } while (true);
+        } catch(SQLException e){
+            handleError(e);
+        }
     }
 
-    private static void displayGenreHistory() {
-        // TODO: write function and modify inputs/outputs
+    private static void dbotifyWrapped(Connection conn, Scanner input) {
+        if (conn == null) {
+            System.out.println("No database connection! \n");
+            return;
+        }
+        try {
+            PreparedStatement checkSongs = conn.prepareStatement("SELECT * FROM SONGS");
+            checkSongs.setQueryTimeout(QUERY_TIMEOUT);
+            ResultSet r = checkSongs.executeQuery();
+            if(!r.next()){
+                System.out.println("No Songs Available to Display");
+                return;
+            }
+            checkSongs.close();
+            do{
+                System.out.println("\nEnter Two Numbers, X and Y. This Function Returns the Top X Songs in the Past Y Months. Type -1 to go to the menu: ");
+                String searchString = input.nextLine();
+
+                if(searchString.equals("-1")) {
+                    System.out.println("Returning to menu...");
+                    return;
+                }
+                String[] splitSearchString = searchString.split(" ");
+                boolean found = false;
+                PreparedStatement s = conn.prepareStatement("SELECT * FROM dbotifywrapped(?, ?)");
+                s.setQueryTimeout(QUERY_TIMEOUT);
+                s.setInt(2, Integer.parseInt(splitSearchString[0]));
+                s.setInt(1, Integer.parseInt(splitSearchString[1]));
+                boolean hasResults = s.execute();
+                if(!hasResults) {
+                    System.out.println("No Songs Listened to in the Past" + splitSearchString[1] + " months." );
+                    continue;
+                }
+                //Print out results
+                ResultSet searchResults = s.getResultSet();
+                while(searchResults.next()){
+                    System.out.println(
+                                    "SongID: " + searchResults.getInt("songID") +
+                                    " | Sessions: " + searchResults.getString("sessioncount"));
+                }
+                s.close();
+            } while (true);
+        } catch(SQLException e){
+            handleError(e);
+        }
     }
 
-    private static void dbotifyWrapped() {
-        // TODO: write function and modify inputs/outputs
+    private static void priceIncrease(Connection conn, Scanner input) {
+        if (conn == null) {
+            System.out.println("No database connection! \n");
+            return;
+        }
+        try {
+            PreparedStatement checkSongs = conn.prepareStatement("SELECT * FROM LISTENERS");
+            checkSongs.setQueryTimeout(QUERY_TIMEOUT);
+            ResultSet r = checkSongs.executeQuery();
+            if(!r.next()){
+                System.out.println("No Listeners Available to Display");
+                return;
+            }
+            checkSongs.close();
+
+            PreparedStatement s = conn.prepareStatement("SELECT * FROM priceIncrease()");
+            s.setQueryTimeout(QUERY_TIMEOUT);
+            s.execute();
+
+            //Print out results
+            ResultSet searchResults = s.getResultSet();
+            while(searchResults.next()){
+                System.out.println(
+                                "Billing State: " + searchResults.getString("billingstate") +
+                                " | Billing ZipCode: " + searchResults.getInt("billingzipcode") +
+                                " | Number of Impacted Listeners: " + searchResults.getInt("impactedlisteners"));
+            }
+            s.close();
+            System.out.println("Press enter to return to the menu...");
+            input.nextLine();
+        } catch(SQLException e){
+            handleError(e);
+        }
     }
 
-    private static void priceIncrease() {
-        // TODO: write function and modify inputs/outputs
+    private static void connectedArtists(Connection conn, Scanner input) {
+        if (conn == null) {
+            System.out.println("No database connection! \n");
+            return;
+        }
+        try {
+            PreparedStatement checkSongs = conn.prepareStatement("SELECT * FROM ARTISTS");
+            checkSongs.setQueryTimeout(QUERY_TIMEOUT);
+            ResultSet r = checkSongs.executeQuery();
+            if(!r.next()){
+                System.out.println("No Artists Available to Display");
+                return;
+            }
+            checkSongs.close();
+            do{
+                System.out.println("\nEnter Two Artist Names. Type -1 to go to the menu: ");
+                System.out.println("This Function Attempts to Find Artist Connections (They are on the Same Release) Between Two Artists Within 3 Releases.");
+                String searchString = input.nextLine();
+
+                if(searchString.equals("-1")) {
+                    System.out.println("Returning to menu...");
+                    return;
+                }
+                String[] splitSearchString = searchString.split(" ");
+                boolean found = false;
+                PreparedStatement s = conn.prepareStatement("SELECT * FROM connectedArtists(?, ?)");
+                s.setQueryTimeout(QUERY_TIMEOUT);
+                s.setString(1, splitSearchString[0].substring(0, Math.min(30,  splitSearchString[0].length())));
+                s.setString(2, splitSearchString[1].substring(0, Math.min(30,  splitSearchString[1].length())));
+                s.execute();
+                ResultSet searchResults = s.getResultSet();
+                System.out.println(searchResults);
+                s.close();
+            } while (true);
+        } catch(SQLException e){
+            handleError(e);
+        }
     }
 
-    private static void connectedArtists() {
-        // TODO: write function and modify inputs/outputs
-    }
 
     private static void exit() {
         // TODO: write function and modify inputs/outputs
@@ -466,9 +643,9 @@ public class DBotify {
     public static void main(String[] args) {
         int menu = -1;
         Connection conn = null;
-        Scanner sc = new Scanner(System.in);
 
         while(menu != 25) {
+            Scanner sc = new Scanner(System.in);
             System.out.println("MENU OPTIONS");
             System.out.println( "1: Connect to DB\n" +
                     "2: Add a release\n" +
@@ -602,104 +779,63 @@ public class DBotify {
                     sc.nextLine();
                     listenToSong(conn, ListenerID);
                     break;
-                    case 10:
-                    System.out.println("\nEnter Listener ID of the Listener:");
-                    int listenToPlaylistID = sc.nextInt();
+                case 10:
+                    System.out.println("\nEnter Listener ID of the Listener to end session:");
+                    int endID = sc.nextInt();
                     sc.nextLine();
-                    listenToPlaylist(conn, listenToPlaylistID);
+                    listenToPlaylist(conn, endID);
                     break;
                 case 11:
-                    System.out.println("\nEnter Listener ID of the Listener to end session:");
-                    int endSessionID = sc.nextInt();
-                    sc.nextLine();
-                    endSession(conn, endSessionID);
+                    // TODO: modify for function
+                    endSession();
                     break;
                 case 12:
-                    System.out.println("\nEnter Listener ID of the Listener to remove:");
-                    int removeListenerID = sc.nextInt();
-                    sc.nextLine();
-                    deleteListener(conn, removeListenerID);
+                    // TODO: modify for function
+                    deleteListener();
                     break;
                 case 13:
-                    System.out.println("\nEnter Listener ID of the Listener to clear history:");
-                    int clearListeningHistoryID = sc.nextInt();
-                    sc.nextLine();
-                    System.out.println("\nConfirm history clear. (Yes/No)");
-                    String confirm = sc.nextLine().trim();
-                    sc.nextLine();
-                    if(confirm.equalsIgnoreCase("Yes"))
-                    {
-                        clearListeningHistory(conn, clearListeningHistoryID);
-                    }else {
-                        System.out.println("Listening History was not cleared");
-                    }
-                        break;
+                    // TODO: modify for function
+                    clearListeningHistory();
+                    break;
                 case 14:
-                    System.out.println("\nEnter song ID of the song to remove:");
-                    int removeSongID = sc.nextInt();
-                    sc.nextLine();
-                    removeSong(conn, removeSongID);
+                    // TODO: modify for function
+                    removeSong();
                     break;
                 case 15:
-                    System.out.println("\nEnter Listener ID of the listener that wishes to delete playlist(s):");
-                    int deletePlaylistListenerID = sc.nextInt();
-                    sc.nextLine();
-                    System.out.println("\nDelete all or a single playlist?(All/Single)");
-                    String allorone = sc.nextLine().trim();
-                    sc.nextLine();
-                    if(allorone.equalsIgnoreCase("All"))
-                    {
-                        System.out.println("\nConfime delete all?(Yes/No)");
-                        String confirmation = sc.nextLine().trim();
-                        sc.nextLine();
-                        if(confirmation.equalsIgnoreCase("Yes"))
-                        {
-                            deletePlaylist(conn, deletePlaylistListenerID, true);
-                        }else {
-                            System.out.println("No playlists were removed.");
-                        }
-                    }else if(confirmation.equalsIgnoreCase("Single")) {
-                        deletePlaylist(conn, deletePlaylistListenerID, false);
-                    }else{
-                        System.out.println("Not a valid response.");
-                    }
+                    // TODO: modify for function
+                    deletePlaylist();
                     break;
                 case 16:
-                    System.out.println("Enter listener ID of the listener: ");
-                    int listPlaylistsWithGenreListenerID = sc.nextInt();
-                    sc.nextLine();
-                    System.out.println("Enter the genre (Pop, Country, Electronic, Hip Hop, Jazz, Punk, Rock, Heavy Metal, Soul): ");
-                    String listPlaylistsWithGenreGenre = sc.nextLine().trim();
-                    sc.nextLine();
-                    listPlaylistsWithGenre(conn, listPlaylistsWithGenreListenerID, listPlaylistsWithGenreGenre);
+                    // TODO: modify for function
+                    listPlaylistsWithGenre();
                     break;
                 case 17:
                     // TODO: modify for function
-                    searchSongs(conn);
+                    searchSongs(conn, sc);
                     break;
                 case 18:
                     // TODO: modify for function
-                    lookupArtist();
+                    lookupArtist(conn, sc);
                     break;
                 case 19:
                     // TODO: modify for function
-                    displayListeningHistory();
+                    displayListeningHistory(conn, sc);
                     break;
                 case 20:
                     // TODO: modify for function
-                    rankArtists();
+                    rankArtists(conn, sc);
                     break;
                 case 21:
                     // TODO: modify for function
-                    displayGenreHistory();
+                    displayGenreHistory(conn, sc);
                     break;
                 case 22:
                     // TODO: modify for function
-                    dbotifyWrapped();
+                    dbotifyWrapped(conn,sc);
                     break;
                 case 23:
                     // TODO: modify for function
-                    priceIncrease();
+                    priceIncrease(conn, sc);
                     break;
                 case 24:
                     // TODO: modify for function
@@ -711,9 +847,9 @@ public class DBotify {
                     break;
                 default:
                     System.out.println("Invalid menu selection");
+                    sc.close();
+
             }
         }
-
-        sc.close();
     }
 }
