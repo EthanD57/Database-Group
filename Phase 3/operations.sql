@@ -255,8 +255,8 @@ BEGIN
     RETURN QUERY
     SELECT s.songID, s.title, s.subtitle, s.duration
     FROM SONGS s
-    WHERE s.title ILIKE '%' || $1 || '%'
-       OR s.subtitle ILIKE '%' || $1 || '%';
+    WHERE s.title ILIKE $1
+       OR s.subtitle ILIKE $1;
 END;
 $$ LANGUAGE plpgsql;
 
