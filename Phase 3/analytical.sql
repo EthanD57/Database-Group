@@ -72,7 +72,7 @@ BEGIN
     FROM SONGS s
     JOIN LISTENS_TO lt ON s.songID = lt.song
     JOIN SESSIONS sess ON lt.session = sess.sessionID
-    WHERE sess.startTime >= CURRENT_DATE - (x * INTERVAL '30 days')
+    WHERE sess.startTime >= CURRENT_DATE - (x * INTERVAL '30 days') AND sess.startTime <= CURRENT_DATE
     GROUP BY s.songID
     ORDER BY sessionCount DESC, s.songID
     LIMIT k;
@@ -92,23 +92,18 @@ CREATE OR REPLACE FUNCTION priceIncrease()
 $$
 BEGIN
     RETURN QUERY
-    WITH zipcode_counts AS (
-        SELECT l.billingState, l.billingZipcode, COUNT(*) AS listenerCount
-        FROM LISTENERS l
-        GROUP BY l.billingState, l.billingZipcode
-    ),
-    ranked_zipcodes AS (
-        SELECT z.billingState, z.billingZipcode, z.listenerCount,
-               ROW_NUMBER() OVER (
-                   PARTITION BY z.billingState
-                   ORDER BY z.listenerCount DESC, z.billingZipcode
-               ) AS rnk
-        FROM zipcode_counts z
+    SELECT billingState, billingZipcode, impactedListeners
+    FROM (
+        SELECT 
+            billingState, 
+            billingZipcode, 
+            COUNT(*) AS impactedListeners,
+            RANK() OVER ( PARTITION BY billingState ORDER BY COUNT(*) DESC) AS Rank
+        FROM LISTENERS
+        GROUP BY billingState, billingZipcode
     )
-    SELECT r.billingState, r.billingZipcode, r.listenerCount AS impactedListeners
-    FROM ranked_zipcodes r
-    WHERE r.rnk = 1
-    ORDER BY r.billingState;
+    WHERE Rank = 1
+    ORDER BY billingState;
 END;
 $$ LANGUAGE plpgsql;
 
