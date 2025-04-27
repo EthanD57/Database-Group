@@ -14,13 +14,15 @@ CREATE OR REPLACE FUNCTION rankArtists()
 $$
 BEGIN
     RETURN QUERY
-    SELECT w.artist AS artistName, COUNT(w.artist) AS timesListened,
-    RANK() OVER (ORDER BY COUNT(w.artist) DESC, SUM(s.duration) DESC, w.artist DESC) AS rank
+    SELECT a.name AS artistName, COUNT(DISTINCT l.session) AS timesListened,
+    RANK() OVER (ORDER BY COUNT(DISTINCT l.session) DESC, SUM(s.duration) DESC, a.name) AS rank
     FROM LISTENS_TO AS l
     JOIN INCLUDES AS i ON l.song = i.song
     JOIN WRITES AS w ON i.release = w.release
     JOIN SONGS AS s ON s.songid = l.song
-    GROUP BY w.artist;
+    RIGHT JOIN ARTISTS AS a ON w.artist = a.name
+    GROUP BY a.name
+    ORDER BY rank;
 END;
 $$ language plpgsql;
 
