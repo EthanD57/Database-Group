@@ -244,28 +244,125 @@ public class DBotify {
 
     }
 
-    private static void endSession() { //11
-        // TODO: write function and modify inputs/outputs
+    private static void endSession(Connection conn, int endID) { //11
+        Scanner sc = new Scanner(System.in);
+        String profile= "";
+        try(PreparedStatement checkSt = conn.prepareStatement("SELECT profileName FROM LISTENERS WHERE listenerID = ?")){
+            checkSt.setQueryTimeout(QUERY_TIMEOUT);
+            checkSt.setInt(1, endID);
+            ResultSet r_1 = checkSt.executeQuery();
+            if (!r_1.next()) {
+                System.out.println("Not a valid listener.");
+                sc.close();
+                return;
+            }
+            profile = r_1.getString("profileName");
+            CallableStatement st = conn.prepareCall("{ CALL endSession(?) }");
+            st.setQueryTimeout(QUERY_TIMEOUT);
+            st.setInt(1, endID);
+            st.execute();
+            System.out.println("Session ended successfully for " + profile + ".");
+        }catch(SQLException e){
+            if(e.getSQLState().equals("P0002")){
+                System.out.println("No active sessions for " + profile + ".");
+            }else{
+                sc.close();
+                handleError(e);
+            }
+        }
     }
 
-    private static void deleteListener() { //12
-        // TODO: write function and modify inputs/outputs
+    private static void deleteListener(Connection conn, int removeID) { //12
+        try (CallableStatement st = conn.prepareCall("{ CALL deleteListener(?) }")){
+            st.setQueryTimeout(QUERY_TIMEOUT);
+            st.setString(1, removeID);
+            st.execute();
+            System.out.println("Successfully removed listener.");
+        } catch(SQLException e) {
+            handleError(e);
+        }
     }
 
-    private static void clearListeningHistory() { //13
-        // TODO: write function and modify inputs/outputs
+    private static void clearListeningHistory(Connection conn, int clearID) { //13
+        try (CallableStatement st = conn.prepareCall("{ CALL clearListeningHistory(?) }")){
+            st.setQueryTimeout(QUERY_TIMEOUT);
+            st.setString(1, clearID);
+            st.execute();
+            System.out.println("Successfully cleared history of listener.");
+        } catch(SQLException e) {
+            handleError(e);
+        }
     }
 
-    private static void removeSong() { //14
-        // TODO: write function and modify inputs/outputs
+    private static void removeSong(Connection conn, int removeSongID) { //14
+        try (CallableStatement st = conn.prepareCall("{ CALL removeSong(?) }")){
+            st.setQueryTimeout(QUERY_TIMEOUT);
+            st.setString(1, removeSongID);
+            st.execute();
+            System.out.println("Successfully removed song.");
+        } catch(SQLException e) {
+            handleError(e);
+        }
     }
 
-    private static void deletePlaylist() { //15
-        // TODO: write function and modify inputs/outputs
+    private static void deletePlaylist(Connection conn, int deletePlaylistListenerID, boolean all) { //15
+        Scanner sc = new Scanner(System.in);
+        try (PreparedStatement st = conn.prepareStatement("SELECT title FROM PLAYLISTS WHERE listener = ?");){
+            st.setQueryTimeout(QUERY_TIMEOUT);
+            st.setString(1, deletePlaylistListenerID);
+            ResultSet r1 = st.executeQuery();
+            if (!r_1.next()) {
+                System.out.println("No playlists to remove");
+                sc.close();
+                return;
+            }
+            ResultSet r2 = st.executeQuery();
+            if(all){
+                while(r2.next()){
+                    CallableStatement allSt = conn.prepareCall("{ CALL deletePlaylist(?, ?) }");
+                    allSt.setQueryTimeout(QUERY_TIMEOUT);
+                    allSt.setString(1, r2.getString("title"));
+                    allSt.setInt(2, deletePlaylistListenerID);
+                    allSt.execute();
+                }
+                System.out.println("Successfully deleted all playlists.");
+            }
+            else{
+                System.out.println("Playlists:");
+                while (r2.next()) {
+                    System.out.println(r2.getString("title"));
+                }
+                System.out.println("Choose a playlist to delete:");
+                String deletePlaylistTitle = sc.nextLine();
+                sc.nextLine();
+                CallableStatement oneSt = conn.prepareCall("{ CALL deletePlaylist(?, ?) }");
+                oneSt.setQueryTimeout(QUERY_TIMEOUT);
+                oneSt.setString(1, deletePlaylistTitle);
+                oneSt.setInt(2, deletePlaylistListenerID);
+                oneSt.execute();
+                System.out.println("Successfully deleted one playlist.");
+            }
+        } catch(SQLException e) {
+            sc.close();
+            handleError(e);
+        }
     }
 
-    private static void listPlaylistsWithGenre() { //16
-        // TODO: write function and modify inputs/outputs
+    private static void listPlaylistsWithGenre(Connection conn, int listenerID, String genre) { //16
+        try (CallableStatement st = conn.prepareCall("{ SELECT * FROM listPlaylistsWithGenre(?, ?) }")) {
+            st.setQueryTimeout(QUERY_TIMEOUT);
+            st.setInt(1, listenerID);
+            st.setString(2, genre);
+            ResultSet r = st.executeQuery();
+            System.out.println("Displaying playlists with " + genre +" genre");
+            int count = 1;
+            while(r.next()){
+                System.out.println(count + ":" + r.getString("playlistTitle") + ", " + r.getInt("playlistListener") + ", " + r.getDate("dateOfCreation"));
+                count++;
+            }
+        }catch(SQLException e) {
+            handleError(e);
+        }
     }
  //------------------------------------------------------------
     private static void searchSongs(Connection conn) {
@@ -505,35 +602,76 @@ public class DBotify {
                     sc.nextLine();
                     listenToSong(conn, ListenerID);
                     break;
-                case 10:
-                    System.out.println("\nEnter Listener ID of the Listener to end session:");
-                    int endID = sc.nextInt();
+                    case 10:
+                    System.out.println("\nEnter Listener ID of the Listener:");
+                    int listenToPlaylistID = sc.nextInt();
                     sc.nextLine();
-                    listenToPlaylist(conn, endID);
+                    listenToPlaylist(conn, listenToPlaylistID);
                     break;
                 case 11:
-                    // TODO: modify for function
-                    endSession();
+                    System.out.println("\nEnter Listener ID of the Listener to end session:");
+                    int endSessionID = sc.nextInt();
+                    sc.nextLine();
+                    endSession(conn, endSessionID);
                     break;
                 case 12:
-                    // TODO: modify for function
-                    deleteListener();
+                    System.out.println("\nEnter Listener ID of the Listener to remove:");
+                    int removeListenerID = sc.nextInt();
+                    sc.nextLine();
+                    deleteListener(conn, removeListenerID);
                     break;
                 case 13:
-                    // TODO: modify for function
-                    clearListeningHistory();
-                    break;
+                    System.out.println("\nEnter Listener ID of the Listener to clear history:");
+                    int clearListeningHistoryID = sc.nextInt();
+                    sc.nextLine();
+                    System.out.println("\nConfirm history clear. (Yes/No)");
+                    String confirm = sc.nextLine().trim();
+                    sc.nextLine();
+                    if(confirm.equalsIgnoreCase("Yes"))
+                    {
+                        clearListeningHistory(conn, clearListeningHistoryID);
+                    }else {
+                        System.out.println("Listening History was not cleared");
+                    }
+                        break;
                 case 14:
-                    // TODO: modify for function
-                    removeSong();
+                    System.out.println("\nEnter song ID of the song to remove:");
+                    int removeSongID = sc.nextInt();
+                    sc.nextLine();
+                    removeSong(conn, removeSongID);
                     break;
                 case 15:
-                    // TODO: modify for function
-                    deletePlaylist();
+                    System.out.println("\nEnter Listener ID of the listener that wishes to delete playlist(s):");
+                    int deletePlaylistListenerID = sc.nextInt();
+                    sc.nextLine();
+                    System.out.println("\nDelete all or a single playlist?(All/Single)");
+                    String allorone = sc.nextLine().trim();
+                    sc.nextLine();
+                    if(allorone.equalsIgnoreCase("All"))
+                    {
+                        System.out.println("\nConfime delete all?(Yes/No)");
+                        String confirmation = sc.nextLine().trim();
+                        sc.nextLine();
+                        if(confirmation.equalsIgnoreCase("Yes"))
+                        {
+                            deletePlaylist(conn, deletePlaylistListenerID, true);
+                        }else {
+                            System.out.println("No playlists were removed.");
+                        }
+                    }else if(confirmation.equalsIgnoreCase("Single")) {
+                        deletePlaylist(conn, deletePlaylistListenerID, false);
+                    }else{
+                        System.out.println("Not a valid response.");
+                    }
                     break;
                 case 16:
-                    // TODO: modify for function
-                    listPlaylistsWithGenre();
+                    System.out.println("Enter listener ID of the listener: ");
+                    int listPlaylistsWithGenreListenerID = sc.nextInt();
+                    sc.nextLine();
+                    System.out.println("Enter the genre (Pop, Country, Electronic, Hip Hop, Jazz, Punk, Rock, Heavy Metal, Soul): ");
+                    String listPlaylistsWithGenreGenre = sc.nextLine().trim();
+                    sc.nextLine();
+                    listPlaylistsWithGenre(conn, listPlaylistsWithGenreListenerID, listPlaylistsWithGenreGenre);
                     break;
                 case 17:
                     // TODO: modify for function
