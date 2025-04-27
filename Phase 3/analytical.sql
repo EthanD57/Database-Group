@@ -2,7 +2,7 @@ SET SCHEMA 'dbotify';
 
 --rankArtists Function
 --Rank artists based on number of sessions that listened to a song by the artist
---Handle ties by number of minutes listened
+--Handle ties by number of minutes listened and then by alphabetical order of the artist name
 --Parameters: None
 --Output: (name of the artist, total times listened to, rank of the artist)
 CREATE OR REPLACE FUNCTION rankArtists()
@@ -15,7 +15,7 @@ $$
 BEGIN
     RETURN QUERY
     SELECT w.artist AS artistName, COUNT(w.artist) AS timesListened,
-    RANK() OVER (ORDER BY COUNT(w.artist) DESC, SUM(s.duration) DESC) AS rank
+    RANK() OVER (ORDER BY COUNT(w.artist) DESC, SUM(s.duration) DESC, w.artist DESC) AS rank
     FROM LISTENS_TO AS l
     JOIN INCLUDES AS i ON l.song = i.song
     JOIN WRITES AS w ON i.release = w.release
