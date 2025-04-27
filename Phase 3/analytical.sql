@@ -123,36 +123,48 @@ CREATE OR REPLACE FUNCTION connectedArtists(a1 VARCHAR(30), a2 VARCHAR(30))
     AS
 $$
 DECLARE
-    path TEXT;
-    current_artist VARCHAR(30);
-    hop_counter INTEGER;
-    max_hops INTEGER := 3;
-    visited_artists TEXT[] := ARRAY[a1];
+    path_array TEXT[];
+    result TEXT;
 BEGIN
-    path := a1;
-    current_artist := a1;
-    hop_counter := 0;
+    WITH RECURSIVE shortest_path(start, current, path, numJumps, visited) AS (
 
-    WHILE hop_counter < max_hops LOOP
-        SELECT w2.artist
-        INTO current_artist
-        FROM WRITES w
-        JOIN WRITES w2 ON w.release = w2.release AND w.artist != w2.artist
-        WHERE w.artist = current_artist AND NOT (w2.artist = ANY(visited_artists))
-        LIMIT 1;
+        SELECT
+            a1 as start,
+            a1 as current,
+            ARRAY[a1] AS path,
+            0 as numJumps,
+            ARRAY[a1] AS visited
 
-        IF hop_counter = max_hops THEN
-            EXIT;
-        END IF;
+    UNION ALL
 
-        path := path || ' → ' || current_artist;
-        visited_artists := array_append(visited_artists, current_artist);
-        hop_counter := hop_counter + 1;
+        SELECT
+            sp.start,
+            w2.artist AS current,
+            sp.path || w2.artist as path,
+            sp.numJumps + 1 as numJumps,
+            sp.visited || w2.artist AS visited
+        FROM
+            shortest_path sp
+        JOIN
+            WRITES w ON sp.current = w.artist
+        JOIN
+            WRITES w2 ON w.release = w2.release AND w.artist != w2.artist
+        WHERE sp.numJumps < 3
+            AND NOT (w2.artist = ANY(sp.visited))
+    )
+    SELECT path
+    INTO path_array
+    FROM shortest_path
+    WHERE current = a2
+    ORDER BY numJumps
+    LIMIT 1;
 
-        IF current_artist = a2 THEN
-            RETURN path;
-        END IF;
-    END LOOP;
-    RETURN 'No Path was found between ' || a1 || ' and ' || a2 || ' within 3 hops';
+    IF path_array IS NULL THEN
+        return 'No Path was found between ' ||a1 || ' and ' || a2 || ' within 3 hops';
+    ELSE
+        --First result from "convert array to string in SQL on Google"
+        result = array_to_string(path_array, ' −−−→ ');
+        RETURN result;
+    END IF;
 END;
 $$ LANGUAGE plpgsql;
