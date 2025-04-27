@@ -14,8 +14,9 @@ public class DBotify {
         props.setProperty("escapeSyntaxCallMode", "callIfNoReturn");
         props.setProperty("password", password);
 
-        try(Connection conn = DriverManager.getConnection("jdbc:postgresql://localhost:5432/postgres", props)) {
-            conn.setSchema("dbotify");
+        try{
+
+            Connection conn = DriverManager.getConnection("jdbc:postgresql://localhost:5432/postgres?currentSchema=dbotify\n", props);
 
             return conn;
         } catch(SQLException e) {
@@ -219,14 +220,14 @@ public class DBotify {
                         System.out.println("Not valid response, enter yes, no, or exit.");
                     }
                 }
-                if (response.equalsIgnoreCase("Yes")) {
+                if (reply.equalsIgnoreCase("Yes")) {
                     CallableStatement s = conn.prepareCall("{ CALL listenToPlaylist(?, ?) }");
                     s.setQueryTimeout(QUERY_TIMEOUT);
                     s.setString(1, playlist);
                     s.setInt(2, endID);
                     s.execute();
                     System.out.println("Successfully listened to " + playlist + ".");
-                } else if (response.equalsIgnoreCase("Exit")) {
+                } else if (reply.equals("Exit")) {
                     System.out.println("Returning to menu...");
                     sc.close();
                     return;
@@ -266,9 +267,64 @@ public class DBotify {
     private static void listPlaylistsWithGenre() { //16
         // TODO: write function and modify inputs/outputs
     }
+ //------------------------------------------------------------
+    private static void searchSongs(Connection conn) {
+        if (conn == null) {
+            System.out.println("No database connection! \n");
+            return;
+        }
+        Scanner input = new Scanner(System.in);
+        try {
+            PreparedStatement checkSongs = conn.prepareStatement("SELECT * FROM SONGS");
+            checkSongs.setQueryTimeout(QUERY_TIMEOUT);
+            ResultSet r = checkSongs.executeQuery();
+            if(!r.next()){
+                System.out.println("No songs available to search");
+                return;
+            }
+            do{
+                System.out.println("\nEnter a song title or subtitle (up to 30 characters) to search for or type -1 to go to the menu: ");
+                System.out.println("For Search Help, type 'help'");
+                String searchTerm = input.nextLine();
 
-    private static void searchSongs() {
-        // TODO: write function and modify inputs/outputs
+                if(searchTerm.equals("-1")) {
+                    System.out.println("Returning to menu...");
+                    input.close();
+                    return;
+                }
+
+                if(searchTerm.equalsIgnoreCase("help")) {
+                    System.out.println("\nSearch finds exact matches for words unless '%' is used to indicate fuzzy matches.");
+                    System.out.println("'%' indicates where there may be extra characters.");
+                    System.out.println("You can use % in cases such as: 'The%' and '%C' to find fuzzy matches like 'The Beetles' and 'AC/DC'.");
+                    continue;
+                }
+
+                CallableStatement s = conn.prepareCall("{CALL searchSongs(?)}");
+                s.setQueryTimeout(QUERY_TIMEOUT);
+                s.setString(1, searchTerm.substring(0, Math.min(30, searchTerm.length())));
+                s.execute();
+                //Print out results
+                ResultSet searchResults = s.getResultSet();
+                boolean found = false;
+                while(searchResults.next()){
+                    System.out.println(
+                            "SongID: " + searchResults.getInt("songID") +
+                            " | Title: " + searchResults.getString("title") +
+                            " | Subtitle: " + searchResults.getString("subtitle") +
+                            " | Duration: " + searchResults.getString("duration"));
+                }
+                if(!found) {
+                    System.out.println("No results found.");
+                }
+                s.close();
+            } while (true);
+        } catch(SQLException e){
+            input.close();
+            handleError(e);
+        }
+        input.close();
+
     }
 
     private static void lookupArtist() {
@@ -356,7 +412,7 @@ public class DBotify {
 
                     conn = connect(username, password);
 
-                    if(conn == null) {
+                    if(conn != null) {
                         System.out.println("Connection successfully established!");
                     }
                     else {
@@ -481,7 +537,7 @@ public class DBotify {
                     break;
                 case 17:
                     // TODO: modify for function
-                    searchSongs();
+                    searchSongs(conn);
                     break;
                 case 18:
                     // TODO: modify for function
