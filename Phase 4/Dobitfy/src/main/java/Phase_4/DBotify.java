@@ -26,7 +26,7 @@ public class DBotify {
     }
 
     private static void addRelease(Connection conn, String title, Date releaseDate, String label) {
-        try (CallableStatement st = conn.prepareCall("{ CALL addRelease(?, ?, ?) }")){
+        try (PreparedStatement st = conn.prepareStatement("SELECT addRelease(?, ?, ?)")){
             st.setQueryTimeout(QUERY_TIMEOUT);
             st.setString(1, title);
             st.setDate(2, releaseDate);
@@ -39,7 +39,7 @@ public class DBotify {
 
     private static void newListener(Connection conn, String profileName, String billingStreet, String billingCity,
                                     String billingState, String billingZipcode, String email) {
-        try (CallableStatement st = conn.prepareCall("{ CALL newListener(?, ?, ?, ?, ?, ?) }")){
+        try (PreparedStatement st = conn.prepareStatement("SELECT newListener(?, ?, ?, ?, ?, ?)")){
             st.setQueryTimeout(QUERY_TIMEOUT);
             st.setString(1, profileName);
             st.setString(2, billingStreet);
@@ -54,7 +54,7 @@ public class DBotify {
     }
 
     private static void createPlaylist(Connection conn, String title, int listener) {
-        try (CallableStatement st = conn.prepareCall("{ CALL createPlaylist(?, ?) }")){
+        try (PreparedStatement st = conn.prepareStatement("SELECT createPlaylist(?, ?)")){
             st.setQueryTimeout(QUERY_TIMEOUT);
             st.setString(1, title);
             st.setInt(2, listener);
@@ -65,7 +65,7 @@ public class DBotify {
     }
 
     private static void addArtistToRelease(Connection conn, String artistName, int release) {
-        try (CallableStatement st = conn.prepareCall("{ CALL addArtistToRelease(?, ?) }")){
+        try (PreparedStatement st = conn.prepareStatement("SELECT addArtistToRelease(?, ?)")){
             st.setQueryTimeout(QUERY_TIMEOUT);
             st.setString(1, artistName);
             st.setInt(2, release);
@@ -89,34 +89,28 @@ public class DBotify {
 
             if(releases.isEmpty()) {
                 System.out.println("\nNo Releases have been written");
-                sc.close();
                 return;
             }
 
             System.out.println("\nEnter the releaseID you want to add a song to or type -1 to go to the menu: ");
             int releaseID = sc.nextInt();
-            sc.nextLine();
 
             if(releaseID == -1) {
                 System.out.println("Returning to menu...");
-                sc.close();
                 return;
             }
             else if(!releases.contains(releaseID)) {
                 System.out.println("Invalid releaseID, returning to menu...");
-                sc.close();
                 return;
             }
             else {
-                int songID = 0;
+                int songID;
                 while(true) {
                     System.out.println("\nEnter a songID to add to the release or type -1 to go to the menu: ");
-                    sc.nextInt();
-                    sc.nextLine();
+                    songID = sc.nextInt();
 
                     if(songID == -1) {
                         System.out.println("Returning to menu...");
-                        sc.close();
                         return;
                     }
 
@@ -128,13 +122,12 @@ public class DBotify {
                 }
             }
         } catch(SQLException e) {
-            sc.close();
             handleError(e);
         }
     }
 
     private static void addSongToPlaylist(Connection conn, String playlistTitle, int listener, int song) {
-        try (CallableStatement st = conn.prepareCall("{ CALL addSongToPlaylist(?, ?, ?) }")){
+        try (PreparedStatement st = conn.prepareStatement( "SELECT addSongToPlaylist(?, ?, ?)")){
             st.setQueryTimeout(QUERY_TIMEOUT);
             st.setString(1, playlistTitle);
             st.setInt(2, listener);
@@ -146,7 +139,7 @@ public class DBotify {
     }
 
     private static void startSession(Connection conn, int listenerID, Timestamp startTime) {
-        try (CallableStatement st = conn.prepareCall("{ CALL startSession(?, ?) }")){
+        try (PreparedStatement st = conn.prepareStatement( "SELECT startSession(?, ?)")){
             st.setQueryTimeout(QUERY_TIMEOUT);
             st.setInt(1, listenerID);
             st.setTimestamp(2, startTime);
@@ -157,7 +150,7 @@ public class DBotify {
     }
 
     private static void listenToSong(Connection conn, int ListernerID, Scanner sc) { //9
-        try(PreparedStatement checkSt = conn.prepareStatement("SELECT COUNT(*) FROM SONGS;")){
+        try(PreparedStatement checkSt = conn.prepareStatement("SELECT COUNT(*) FROM SONGS")){
             checkSt.setQueryTimeout(QUERY_TIMEOUT);
             ResultSet r = checkSt.executeQuery();
             r.next();
@@ -171,7 +164,6 @@ public class DBotify {
                 sc.nextLine();
                 if(songID == -1) {
                     System.out.println("Returning to menu...");
-                    sc.close();
                     return;
                 }
                 PreparedStatement songSt = conn.prepareStatement("SELECT * FROM SONGS WHERE songID = ?;");
@@ -179,10 +171,10 @@ public class DBotify {
                 songSt.setInt(1, songID);
                 ResultSet songR = songSt.executeQuery();
                 if(!songR.next()){
-                    System.out.println("Inputed invalid songID: " + songID + ". Please try again.");
+                    System.out.println("Inputted invalid songID: " + songID + ". Please try again.");
                     continue;
                 }
-                CallableStatement s = conn.prepareCall("{ CALL listenToSong(?, ?) }");
+                PreparedStatement s = conn.prepareStatement( "SELECT listenToSong(?, ?) ");
                 s.setQueryTimeout(QUERY_TIMEOUT);
                 s.setInt(1, songID);
                 s.setInt(2, ListernerID);
@@ -190,7 +182,6 @@ public class DBotify {
                 System.out.println("Successfully added song " + songID + "to session.");
             }
         } catch(SQLException e){
-            sc.close();
             handleError(e);
         }
     }
@@ -218,7 +209,7 @@ public class DBotify {
                     }
                 }
                 if (reply.equalsIgnoreCase("Yes")) {
-                    CallableStatement s = conn.prepareCall("{ CALL listenToPlaylist(?, ?) }");
+                    PreparedStatement s = conn.prepareStatement("SELECT listenToPlaylist(?, ?) ");
                     s.setQueryTimeout(QUERY_TIMEOUT);
                     s.setString(1, playlist);
                     s.setInt(2, endID);
@@ -226,16 +217,13 @@ public class DBotify {
                     System.out.println("Successfully listened to " + playlist + ".");
                 } else if (reply.equals("Exit")) {
                     System.out.println("Returning to menu...");
-                    sc.close();
                     return;
                 }
             }
             System.out.println("That was the last playlist. Returning to menu...");
-            sc.close();
             return;
 
         }catch(SQLException e){
-            sc.close();
             handleError(e);
         }
 
@@ -249,11 +237,10 @@ public class DBotify {
             ResultSet r_1 = checkSt.executeQuery();
             if (!r_1.next()) {
                 System.out.println("Not a valid listener.");
-                sc.close();
                 return;
             }
             profile = r_1.getString("profileName");
-            CallableStatement st = conn.prepareCall("{ CALL endSession(?) }");
+            PreparedStatement st = conn.prepareStatement("SELECT endSession(?)");
             st.setQueryTimeout(QUERY_TIMEOUT);
             st.setInt(1, endID);
             st.execute();
@@ -262,14 +249,13 @@ public class DBotify {
             if(e.getSQLState().equals("P0002")){
                 System.out.println("No active sessions for " + profile + ".");
             }else{
-                sc.close();
                 handleError(e);
             }
         }
     }
 
     private static void deleteListener(Connection conn, int removeID) { //12
-        try (CallableStatement st = conn.prepareCall("{ CALL deleteListener(?) }")){
+        try (PreparedStatement st = conn.prepareStatement("SELECT deleteListener(?)")){
             st.setQueryTimeout(QUERY_TIMEOUT);
             st.setInt(1, removeID);
             st.execute();
@@ -280,7 +266,7 @@ public class DBotify {
     }
 
     private static void clearListeningHistory(Connection conn, int clearID) { //13
-        try (CallableStatement st = conn.prepareCall("{ CALL clearListeningHistory(?) }")){
+        try (PreparedStatement st = conn.prepareStatement( "SELECT clearListeningHistory(?)")){
             st.setQueryTimeout(QUERY_TIMEOUT);
             st.setInt(1, clearID);
             st.execute();
@@ -291,7 +277,7 @@ public class DBotify {
     }
 
     private static void removeSong(Connection conn, int removeSongID) { //14
-        try (CallableStatement st = conn.prepareCall("{ CALL removeSong(?) }")){
+        try (PreparedStatement st = conn.prepareStatement("SELECT removeSong(?) ")){
             st.setQueryTimeout(QUERY_TIMEOUT);
             st.setInt(1, removeSongID);
             st.execute();
@@ -302,19 +288,18 @@ public class DBotify {
     }
 
     private static void deletePlaylist(Connection conn, int deletePlaylistListenerID, boolean all, Scanner sc) { //15
-        try (PreparedStatement st = conn.prepareStatement("SELECT title FROM PLAYLISTS WHERE listener = ?");){
+        try (PreparedStatement st = conn.prepareStatement("SELECT title FROM PLAYLISTS WHERE listener = ?")){
             st.setQueryTimeout(QUERY_TIMEOUT);
             st.setInt(1, deletePlaylistListenerID);
             ResultSet r1 = st.executeQuery();
             if (!r1.next()) {
                 System.out.println("No playlists to remove");
-                sc.close();
                 return;
             }
             ResultSet r2 = st.executeQuery();
             if(all){
                 while(r2.next()){
-                    CallableStatement allSt = conn.prepareCall("{ CALL deletePlaylist(?, ?) }");
+                    PreparedStatement allSt = conn.prepareStatement("SELECT deletePlaylist(?, ?) ");
                     allSt.setQueryTimeout(QUERY_TIMEOUT);
                     allSt.setString(1, r2.getString("title"));
                     allSt.setInt(2, deletePlaylistListenerID);
@@ -330,7 +315,7 @@ public class DBotify {
                 System.out.println("Choose a playlist to delete:");
                 String deletePlaylistTitle = sc.nextLine();
                 sc.nextLine();
-                CallableStatement oneSt = conn.prepareCall("{ CALL deletePlaylist(?, ?) }");
+                PreparedStatement oneSt = conn.prepareStatement("SELECT deletePlaylist(?, ?) ");
                 oneSt.setQueryTimeout(QUERY_TIMEOUT);
                 oneSt.setString(1, deletePlaylistTitle);
                 oneSt.setInt(2, deletePlaylistListenerID);
@@ -338,7 +323,6 @@ public class DBotify {
                 System.out.println("Successfully deleted one playlist.");
             }
         } catch(SQLException e) {
-            sc.close();
             handleError(e);
         }
     }
@@ -359,7 +343,7 @@ public class DBotify {
             handleError(e);
         }
     }
- //------------------------------------------------------------
+
     private static void searchSongs(Connection conn, Scanner input) {
         if (conn == null) {
             System.out.println("No database connection! \n");
@@ -478,22 +462,30 @@ public class DBotify {
                 return;
             }
             checkSongs.close();
+            String start_date;
+            String end_date;
+            int id;
             do{
-                System.out.println("\nEnter a start date, end date, and listener ID to show listening history, or type -1 to go to the menu: ");
-                System.out.println("Format: YYYY-MM-DD YYYY-MM-DD <integer>");
-                String searchString = input.nextLine();
+                System.out.println("\nEnter a start date or type -1 to go to the menu: ");
+                System.out.println("Format: YYYY-MM-DD");
+                start_date = input.nextLine();
+                if(start_date.equals("-1")) return;
 
-                if(searchString.equals("-1")) {
-                    System.out.println("Returning to menu...");
-                    return;
-                }
-                String[] splitSearchString = searchString.split(" ");
+                System.out.println("\nEnter an end date or type -1 to go to the menu: ");
+                System.out.println("Format: YYYY-MM-DD");
+                end_date = input.nextLine();
+                if(end_date.equals("-1")) return;
+
+                System.out.println("\nEnter a Listener ID or type -1 to go to the menu: ");
+                id = Integer.parseInt(input.nextLine());
+                if(id == -1) return;
+
                 boolean found = false;
                 PreparedStatement s = conn.prepareStatement("SELECT * FROM displayListeningHistory(?, ?, ?)");
                 s.setQueryTimeout(QUERY_TIMEOUT);
-                s.setDate(1, Date.valueOf(splitSearchString[0]));
-                s.setDate(2, Date.valueOf(splitSearchString[1]));
-                s.setInt(3, Integer.parseInt(splitSearchString[2]));
+                s.setDate(1, Date.valueOf(start_date));
+                s.setDate(2, Date.valueOf(end_date));
+                s.setInt(3, id);
                 boolean hasResults = s.execute();
                 if(!hasResults) {
                     System.out.println("No results found.");
@@ -564,24 +556,25 @@ public class DBotify {
                 return;
             }
             checkSongs.close();
+            String genre;
+            int months;
             do{
-                System.out.println("\nEnter a Genre and Time (T) in Months to Search For All Songs of That Genre That Were Listened to In 'T' Months, or type -1 to go to the menu: ");
+                System.out.println("\nEnter a Genre, or type -1 to go to the menu: ");
                 System.out.println("Genres: Pop, Country, Electronic, Hip Hop, Jazz, Punk, Rock, Heavy Metal, Soul");
-                String searchString = input.nextLine();
+                genre = input.nextLine();
+                if(genre.equals("-1")) return;
+                System.out.println("\nEnter the number of months to look back, or type -1 to go to the menu: ");
+                months = Integer.parseInt(input.nextLine()); //Makes moving to the next line easier for the loop
+                if(months == -1) return;
 
-                if(searchString.equals("-1")) {
-                    System.out.println("Returning to menu...");
-                    return;
-                }
-                String[] splitSearchString = searchString.split(" ");
                 boolean found = false;
                 PreparedStatement s = conn.prepareStatement("SELECT * FROM displayGenreHistory(?, ?)");
                 s.setQueryTimeout(QUERY_TIMEOUT);
-                s.setString(1, splitSearchString[0]);
-                s.setInt(2, Integer.parseInt(splitSearchString[1]));
+                s.setString(1, genre);
+                s.setInt(2, months);
                 boolean hasResults = s.execute();
                 if(!hasResults) {
-                    System.out.println("This genre was not listened to in the past " + splitSearchString[1] + " months." );
+                    System.out.println("This genre was not listened to in the past " + months + " months." );
                     continue;
                 }
                 //Print out results
@@ -695,24 +688,25 @@ public class DBotify {
                 return;
             }
             checkSongs.close();
+            String first;
+            String second;
             do{
-                System.out.println("\nEnter Two Artist Names. Type -1 to go to the menu: ");
-                System.out.println("This Function Attempts to Find Artist Connections (They are on the Same Release) Between Two Artists Within 3 Releases.");
-                String searchString = input.nextLine();
+                System.out.println("\nEnter the First Artist's Name, or Type -1 to Go to The Menu: ");
+                first = input.nextLine();
+                if (first.equals("-1")) return;
+                System.out.println("\nEnter the Second Artist's Name, or Type -1 to Go to The Menu: ");
+                second = input.nextLine();
+                if (second.equals("-1")) return;
 
-                if(searchString.equals("-1")) {
-                    System.out.println("Returning to menu...");
-                    return;
-                }
-                String[] splitSearchString = searchString.split(" ");
                 boolean found = false;
                 PreparedStatement s = conn.prepareStatement("SELECT * FROM connectedArtists(?, ?)");
                 s.setQueryTimeout(QUERY_TIMEOUT);
-                s.setString(1, splitSearchString[0].substring(0, Math.min(30,  splitSearchString[0].length())));
-                s.setString(2, splitSearchString[1].substring(0, Math.min(30,  splitSearchString[1].length())));
+                s.setString(1, first.substring(0, Math.min(30, first.length())));
+                s.setString(2, second.substring(0, Math.min(30, second.length())));
                 s.execute();
                 ResultSet searchResults = s.getResultSet();
-                System.out.println(searchResults);
+                searchResults.next();
+                System.out.println(searchResults.getObject(1));
                 s.close();
             } while (true);
         } catch(SQLException e){
@@ -890,7 +884,6 @@ public class DBotify {
                     sc.nextLine();
                     System.out.println("\nConfirm history clear. (Yes/No)");
                     String confirm = sc.nextLine().trim();
-                    sc.nextLine();
                     if(confirm.equalsIgnoreCase("Yes"))
                     {
                         clearListeningHistory(conn, clearListeningHistoryID);
@@ -907,22 +900,20 @@ public class DBotify {
                 case 15:
                     System.out.println("\nEnter Listener ID of the listener that wishes to delete playlist(s):");
                     int deletePlaylistListenerID = sc.nextInt();
-                    String confirmation = sc.nextLine();
+                    sc.nextLine();
                     System.out.println("\nDelete all or a single playlist?(All/Single)");
                     String allorone = sc.nextLine().trim();
-                    sc.nextLine();
                     if(allorone.equalsIgnoreCase("All"))
                     {
-                        System.out.println("\nConfime delete all?(Yes/No)");
-                        confirmation = sc.nextLine().trim();
-                        sc.nextLine();
+                        System.out.println("\nConfirm delete all?(Yes/No)");
+                        String confirmation = sc.nextLine().trim();
                         if(confirmation.equalsIgnoreCase("Yes"))
                         {
                             deletePlaylist(conn, deletePlaylistListenerID, true, sc);
                         }else {
                             System.out.println("No playlists were removed.");
                         }
-                    }else if(confirmation.equalsIgnoreCase("Single")) {
+                    }else if(allorone.equalsIgnoreCase("Single")) {
                         deletePlaylist(conn, deletePlaylistListenerID, false, sc);
                     }else{
                         System.out.println("Not a valid response.");
@@ -934,7 +925,6 @@ public class DBotify {
                     sc.nextLine();
                     System.out.println("Enter the genre (Pop, Country, Electronic, Hip Hop, Jazz, Punk, Rock, Heavy Metal, Soul): ");
                     String listPlaylistsWithGenreGenre = sc.nextLine().trim();
-                    sc.nextLine();
                     listPlaylistsWithGenre(conn, listPlaylistsWithGenreListenerID, listPlaylistsWithGenreGenre);
                     break;
                 case 17:
