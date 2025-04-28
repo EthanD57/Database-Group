@@ -5,9 +5,9 @@ Ethan Defilippi - ecd57 </p>
 <p> 
 Before running our client, make sure that you open datagrip and run all of the schema and operation files to load the schema into your local postgres instance. Ensure that you run schema.sql, operations.sql, analytical.sql, and trigger.sql in datagrip.
 
-To use our client, type in the number of the operation you want to perform after the menu is displayed to the screen. The options are listed as follows (and are printed in the client when you run the program):
-1: Connect to DB
-2: Add a release
+To use our client, type in the number of the operation you want to perform after the menu is displayed to the screen. The options are listed as follows (and are printed in the client when you run the program): <br>
+1: Connect to DB <br>
+2: Add a release <br>
 3: Create a new listener
 4: Create a playlist
 5: Add an artist to a release
