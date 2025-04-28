@@ -19,10 +19,14 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION newListener(profileName VARCHAR(30), billingStreet VARCHAR(50), billingCity VARCHAR(50), 
 billingState "state", billingZipcode CHAR(5), email VARCHAR(30))
     RETURNS VOID AS
+
 $$
+DECLARE
+    id INTEGER;
 BEGIN
-    INSERT INTO LISTENERS (profileName, billingStreet, billingCity, billingState, billingZipcode, email)
-    VALUES ($1, $2, $3, $4, $5, $6);
+    SELECT MAX(listenerID) + 1 FROM LISTENERS INTO id;
+    INSERT INTO LISTENERS (listenerid, profileName, billingStreet, billingCity, billingState, billingZipcode, email)
+    VALUES (id, $1, $2, $3, $4, $5, $6);
 END;
 $$ LANGUAGE plpgsql;
 
@@ -83,8 +87,9 @@ $$
 DECLARE
     new_sessionID INTEGER;
 BEGIN
-    INSERT INTO SESSIONS (listener, startTime)
-    VALUES ($1, $2)
+    SELECT MAX(sessionid) + 1 FROM SESSIONS INTO new_sessionID;
+    INSERT INTO SESSIONS (sessionid, listener, startTime)
+    VALUES (new_sessionID,$1, $2)
     RETURNING sessionID INTO new_sessionID;
 
     RETURN new_sessionID;
