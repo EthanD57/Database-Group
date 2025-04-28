@@ -2,18 +2,26 @@
 Katherine Lin - ksl72 <br>
 Ethan Defilippi - ecd57 </p>
 
+<p>
+  Note that we fixed all of the following functions for this phase:
+  Phase 2: searchSongs
+  Phase 3: rankArtists, dbotifyWrapped, priceIncrease, connectedArtists
+</p>
+
 <p> 
 Before running our client, make sure that you open datagrip and run all of the schema and operation files to load the schema into your local postgres instance. Ensure that you run schema.sql, operations.sql, analytical.sql, and trigger.sql in datagrip. <br> <br>
 
 #### To run our client
 
-1. Run mvn clean compile
-2. Run mvn package
-3. Run java -cp target/DBotify-1.0-SNAPSHOT.jar Phase_4.DBotify
+1. Make sure you have a version of Java 21 installed and currently used on your machine
+2. Run mvn clean compile
+3. Run mvn package
+4. Run java -cp target/DBotify-1.0-SNAPSHOT.jar Phase_4.DBotify
 
 ### OR
 
-1. Just open it in intelliJ and hit run (MUCH EASIER)
+1. Make sure you have a version of Java 21 installed and currently used on your machine
+2. Just open it in intelliJ and hit run (MUCH EASIER)
 
 
 #### How to Use Our Client
