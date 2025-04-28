@@ -16,7 +16,7 @@ public class DBotify {
 
         try{
 
-            return DriverManager.getConnection("jdbc:postgresql://localhost:5432/postgres?currentSchema=dbotify\n", props);
+            return DriverManager.getConnection("jdbc:postgresql://localhost:5432/postgres?currentSchema=dbotify", props);
         } catch(SQLException e) {
             handleError(e);
             return null;

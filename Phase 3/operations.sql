@@ -84,7 +84,8 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION startSession(listener INTEGER, startTime TIMESTAMP)
     RETURNS INTEGER AS
 $$
-DECLARE
+DECLARE    implementation("org.postgresql:postgresql:42.7.1")
+
     new_sessionID INTEGER;
 BEGIN
     SELECT MAX(sessionid) + 1 FROM SESSIONS INTO new_sessionID;
