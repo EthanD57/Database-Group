@@ -16,9 +16,7 @@ public class DBotify {
 
         try{
 
-            Connection conn = DriverManager.getConnection("jdbc:postgresql://localhost:5432/postgres?currentSchema=dbotify\n", props);
-
-            return conn;
+            return DriverManager.getConnection("jdbc:postgresql://localhost:5432/postgres?currentSchema=dbotify\n", props);
         } catch(SQLException e) {
             handleError(e);
             return null;
@@ -706,7 +704,24 @@ public class DBotify {
                 s.execute();
                 ResultSet searchResults = s.getResultSet();
                 searchResults.next();
-                System.out.println(searchResults.getObject(1));
+                StringBuilder result = new StringBuilder(searchResults.getString(1));
+                String[] splitSearchString = result.toString().split(" ");
+                if (splitSearchString[0].equals("No")) {
+                    System.out.println(result);
+                }
+                else{
+                    result = new StringBuilder();
+                    for (int i = 0; i < splitSearchString.length; i++) {
+                        char firtChar = splitSearchString[i].charAt(0);
+                        if (Character.isLetter(firtChar)) {
+                            result.append(splitSearchString[i]).append(" ");
+                        }
+                        else{
+                            result.append("----> ");
+                        }
+                    }
+                    System.out.println(result);
+                }
                 s.close();
             } while (true);
         } catch(SQLException e){
@@ -728,31 +743,33 @@ public class DBotify {
 
         while(menu != 25) {
             System.out.println("MENU OPTIONS");
-            System.out.println( "1: Connect to DB\n" +
-                    "2: Add a release\n" +
-                    "3: Create a new listener\n" +
-                    "4: Create a playlist\n" +
-                    "5: Add an artist to a release\n" +
-                    "6: Add song(s) to a release\n" +
-                    "7: Add a song to a playlist\n" +
-                    "8: Start a session\n" +
-                    "9: Listen to a song or multiple songs\n" +
-                    "10: Listen to a playlist\n" +
-                    "11: End a session\n" +
-                    "12: Delete a listener\n" +
-                    "13: Clear a listener's listening history\n" +
-                    "14: Remove a song\n" +
-                    "15: Delete a playlist or all playlists\n" +
-                    "16: Find all of a listener's playlists that have a song with a specific genre\n" +
-                    "17: Search for songs with a title or subtitle that contain a pattern\n" +
-                    "18: Find all of an artist's songs that are part of a release\n" +
-                    "19: Display a listener's listening history between two dates\n" +
-                    "20: Rank of artists\n" +
-                    "21: Display songs with a genre that have been listened to in a specified number of months\n" +
-                    "22: DBotify Wrapped\n" +
-                    "23: Impact of price increases on most populous zipcode in each state\n" +
-                    "24: Finds a path between two artists that are at most 3 hops away\n" +
-                    "25: Exit\n");
+            System.out.println("""
+                    1: Connect to DB
+                    2: Add a release
+                    3: Create a new listener
+                    4: Create a playlist
+                    5: Add an artist to a release
+                    6: Add song(s) to a release
+                    7: Add a song to a playlist
+                    8: Start a session
+                    9: Listen to a song or multiple songs
+                    10: Listen to a playlist
+                    11: End a session
+                    12: Delete a listener
+                    13: Clear a listener's listening history
+                    14: Remove a song
+                    15: Delete a playlist or all playlists
+                    16: Find all of a listener's playlists that have a song with a specific genre
+                    17: Search for songs with a title or subtitle that contain a pattern
+                    18: Find all of an artist's songs that are part of a release
+                    19: Display a listener's listening history between two dates
+                    20: Rank of artists
+                    21: Display songs with a genre that have been listened to in a specified number of months
+                    22: DBotify Wrapped
+                    23: Impact of price increases on most populous zipcode in each state
+                    24: Finds a path between two artists that are at most 3 hops away
+                    25: Exit
+                    """);
             menu = sc.nextInt();
             sc.nextLine();
 
