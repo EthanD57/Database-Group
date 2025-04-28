@@ -3,9 +3,9 @@ Katherine Lin - ksl72 <br>
 Ethan Defilippi - ecd57 </p>
 
 <p>
-  Note that we fixed all of the following functions for this phase:
-  Phase 2: searchSongs
-  Phase 3: rankArtists, dbotifyWrapped, priceIncrease, connectedArtists
+  Note that we fixed all of the following functions for this phase: <br>
+  Phase 2: searchSongs <br>
+  Phase 3: rankArtists, dbotifyWrapped, priceIncrease, connectedArtists <br>
 </p>
 
 <p> 
