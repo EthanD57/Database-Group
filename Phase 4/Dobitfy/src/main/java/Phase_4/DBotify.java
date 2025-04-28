@@ -75,8 +75,7 @@ public class DBotify {
         }
     }
 
-    private static void addSongToRelease(Connection conn) {
-        Scanner sc = new Scanner(System.in);
+    private static void addSongToRelease(Connection conn, Scanner sc) {
 
         try (PreparedStatement st = conn.prepareStatement("SELECT * FROM RELEASES;")){
             List<Integer> releases = new ArrayList<Integer>();
@@ -157,8 +156,7 @@ public class DBotify {
         }
     }
 
-    private static void listenToSong(Connection conn, int ListernerID) { //9
-        Scanner sc = new Scanner(System.in);
+    private static void listenToSong(Connection conn, int ListernerID, Scanner sc) { //9
         try(PreparedStatement checkSt = conn.prepareStatement("SELECT COUNT(*) FROM SONGS;")){
             checkSt.setQueryTimeout(QUERY_TIMEOUT);
             ResultSet r = checkSt.executeQuery();
@@ -176,7 +174,7 @@ public class DBotify {
                     sc.close();
                     return;
                 }
-                PreparedStatement songSt = conn.prepareStatement("SELECT * FROM SONGS WHERE ID = ?;");
+                PreparedStatement songSt = conn.prepareStatement("SELECT * FROM SONGS WHERE songID = ?;");
                 songSt.setQueryTimeout(QUERY_TIMEOUT);
                 songSt.setInt(1, songID);
                 ResultSet songR = songSt.executeQuery();
@@ -197,8 +195,7 @@ public class DBotify {
         }
     }
 
-    private static void listenToPlaylist(Connection conn, int endID) { //10
-        Scanner sc = new Scanner(System.in);
+    private static void listenToPlaylist(Connection conn, int endID, Scanner sc) { //10
         try(PreparedStatement checkSt = conn.prepareStatement("SELECT title FROM PLAYLISTS WHERE listener = ?;")){
             checkSt.setQueryTimeout(QUERY_TIMEOUT);
             checkSt.setInt(1, endID);
@@ -244,8 +241,7 @@ public class DBotify {
 
     }
 
-    private static void endSession(Connection conn, int endID) { //11
-        Scanner sc = new Scanner(System.in);
+    private static void endSession(Connection conn, int endID, Scanner sc) { //11
         String profile= "";
         try(PreparedStatement checkSt = conn.prepareStatement("SELECT profileName FROM LISTENERS WHERE listenerID = ?")){
             checkSt.setQueryTimeout(QUERY_TIMEOUT);
@@ -275,7 +271,7 @@ public class DBotify {
     private static void deleteListener(Connection conn, int removeID) { //12
         try (CallableStatement st = conn.prepareCall("{ CALL deleteListener(?) }")){
             st.setQueryTimeout(QUERY_TIMEOUT);
-            st.setString(1, removeID);
+            st.setInt(1, removeID);
             st.execute();
             System.out.println("Successfully removed listener.");
         } catch(SQLException e) {
@@ -286,7 +282,7 @@ public class DBotify {
     private static void clearListeningHistory(Connection conn, int clearID) { //13
         try (CallableStatement st = conn.prepareCall("{ CALL clearListeningHistory(?) }")){
             st.setQueryTimeout(QUERY_TIMEOUT);
-            st.setString(1, clearID);
+            st.setInt(1, clearID);
             st.execute();
             System.out.println("Successfully cleared history of listener.");
         } catch(SQLException e) {
@@ -305,8 +301,7 @@ public class DBotify {
         }
     }
 
-    private static void deletePlaylist(Connection conn, int deletePlaylistListenerID, boolean all) { //15
-        Scanner sc = new Scanner(System.in);
+    private static void deletePlaylist(Connection conn, int deletePlaylistListenerID, boolean all, Scanner sc) { //15
         try (PreparedStatement st = conn.prepareStatement("SELECT title FROM PLAYLISTS WHERE listener = ?");){
             st.setQueryTimeout(QUERY_TIMEOUT);
             st.setInt(1, deletePlaylistListenerID);
@@ -725,11 +720,6 @@ public class DBotify {
         }
     }
 
-
-    private static void exit() {
-        // TODO: write function and modify inputs/outputs
-    }
-
     private static void handleError(SQLException err) {
         System.err.println("The following error occurred:");
         System.err.println("Message = " + err.getMessage());
@@ -843,7 +833,7 @@ public class DBotify {
                     addArtistToRelease(conn, artistName, releaseID);
                     break;
                 case 6:
-                    addSongToRelease(conn);
+                    addSongToRelease(conn, sc);
                     break;
                 case 7:
                     System.out.println("Adding song to playlist...\n");
@@ -874,19 +864,19 @@ public class DBotify {
                     System.out.println("\nEnter Listener ID of the Listener:");
                     int ListenerID = sc.nextInt();
                     sc.nextLine();
-                    listenToSong(conn, ListenerID);
+                    listenToSong(conn, ListenerID, sc);
                     break;
                     case 10:
                     System.out.println("\nEnter Listener ID of the Listener:");
                     int listenToPlaylistID = sc.nextInt();
                     sc.nextLine();
-                    listenToPlaylist(conn, listenToPlaylistID);
+                    listenToPlaylist(conn, listenToPlaylistID, sc);
                     break;
                 case 11:
                     System.out.println("\nEnter Listener ID of the Listener to end session:");
                     int endSessionID = sc.nextInt();
                     sc.nextLine();
-                    endSession(conn, endSessionID);
+                    endSession(conn, endSessionID, sc);
                     break;
                 case 12:
                     System.out.println("\nEnter Listener ID of the Listener to remove:");
@@ -917,23 +907,23 @@ public class DBotify {
                 case 15:
                     System.out.println("\nEnter Listener ID of the listener that wishes to delete playlist(s):");
                     int deletePlaylistListenerID = sc.nextInt();
-                    sc.nextLine();
+                    String confirmation = sc.nextLine();
                     System.out.println("\nDelete all or a single playlist?(All/Single)");
                     String allorone = sc.nextLine().trim();
                     sc.nextLine();
                     if(allorone.equalsIgnoreCase("All"))
                     {
                         System.out.println("\nConfime delete all?(Yes/No)");
-                        String confirmation = sc.nextLine().trim();
+                        confirmation = sc.nextLine().trim();
                         sc.nextLine();
                         if(confirmation.equalsIgnoreCase("Yes"))
                         {
-                            deletePlaylist(conn, deletePlaylistListenerID, true);
+                            deletePlaylist(conn, deletePlaylistListenerID, true, sc);
                         }else {
                             System.out.println("No playlists were removed.");
                         }
                     }else if(confirmation.equalsIgnoreCase("Single")) {
-                        deletePlaylist(conn, deletePlaylistListenerID, false);
+                        deletePlaylist(conn, deletePlaylistListenerID, false, sc);
                     }else{
                         System.out.println("Not a valid response.");
                     }
@@ -948,46 +938,44 @@ public class DBotify {
                     listPlaylistsWithGenre(conn, listPlaylistsWithGenreListenerID, listPlaylistsWithGenreGenre);
                     break;
                 case 17:
-                    // TODO: modify for function
                     searchSongs(conn, sc);
                     break;
                 case 18:
-                    // TODO: modify for function
                     lookupArtist(conn, sc);
                     break;
                 case 19:
-                    // TODO: modify for function
                     displayListeningHistory(conn, sc);
                     break;
                 case 20:
-                    // TODO: modify for function
                     rankArtists(conn, sc);
                     break;
                 case 21:
-                    // TODO: modify for function
                     displayGenreHistory(conn, sc);
                     break;
                 case 22:
-                    // TODO: modify for function
                     dbotifyWrapped(conn,sc);
                     break;
                 case 23:
-                    // TODO: modify for function
                     priceIncrease(conn, sc);
                     break;
                 case 24:
-                    // TODO: modify for function
-                    connectedArtists();
+                    connectedArtists(conn, sc);
                     break;
                 case 25:
-                    // TODO: modify for function
-                    exit();
-                    break;
+                    try{
+                        if(conn != null) {
+                            conn.close();
+                        }
+                    }
+                    catch(SQLException e){
+                        handleError(e);
+                    }
+                    sc.close();
+                    System.exit(0);
                 default:
                     System.out.println("Invalid menu selection");
             }
         }
-
         sc.close();
     }
 }
