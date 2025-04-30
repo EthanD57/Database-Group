@@ -84,7 +84,7 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION startSession(listener INTEGER, startTime TIMESTAMP)
     RETURNS INTEGER AS
 $$
-DECLARE    implementation("org.postgresql:postgresql:42.7.1")
+DECLARE
 
     new_sessionID INTEGER;
 BEGIN
